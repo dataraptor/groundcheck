@@ -1,0 +1,11 @@
+# eval-layer dependencies (Split 07).
+#
+# The engine itself is installed separately and editable from the repo root:
+#     python -m pip install -e ./core[dev]
+# then this layer's own deps:
+#     python -m pip install -r eval/requirements.txt
+#
+# pyyaml is an EVAL-LAYER dep only — it is deliberately NOT in core/pyproject.toml
+# so `core` stays dataset-free (README architecture / SPLIT-07 divergence note).
+pyyaml>=6
+pytest>=8

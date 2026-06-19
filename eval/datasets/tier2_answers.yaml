@@ -1,0 +1,185 @@
+# Tier-2 gold: end-to-end {source, answer, gold_is_faithful} answer cases (spec §11, Appendix B.2).
+#
+# Provenance: authored 2026-06-20, HUMAN-REVIEWED (single-annotator gold, §11).
+#
+# 18 cases across the five B.2 buckets: fully_grounded x5 (true), single_fabricated_stat x4
+# (false), direct_contradiction x4 (false), faithful_paraphrase x3 (true), mixed x2 (false).
+# ~20% (4) are frozen:true (held out, never tuned against, §11). Every case carries >=1
+# checkable claim (no empty/whitespace answers) so none hits the "0 claims -> predicted
+# faithful" corner case (§17 / §11 corner case (b)).
+#
+# t2-001 == core/examples/example_hallucinated.json and t2-002 == example_grounded.json,
+# byte-for-byte (single source of truth; a test asserts this so they cannot drift).
+#
+# ⚠️ faithful_paraphrase authoring caution (Appendix B.2 / §11 "Precision watch-out"):
+# t2-015/016/017 paraphrase ONLY facts the source states, so every decomposed claim is
+# genuinely SUPPORTED and the case scores a clean 1.0 at tau=1.0 — a true-but-unstated
+# detail would create an NEI claim and a built-in false positive.
+
+# --- the two Split-05 examples (the headline demos; held-in) ---------------------- #
+- id: t2-001
+  topic: hypertension
+  source: &src_hyper "High blood pressure, also called hypertension, usually has no symptoms. A reading of 130/80 mm Hg or higher is considered high. Over time, high blood pressure raises the risk of heart attack, stroke, and kidney disease. Lifestyle changes such as reducing salt, exercising regularly, and maintaining a healthy weight can help lower blood pressure. Some people also need medicine to keep their blood pressure under control."
+  answer: "Hypertension usually causes no symptoms. Many people don't know they have it. A reading of 130/80 mm Hg or higher is considered high blood pressure. It increases the risk of heart attack, stroke, and kidney disease. Cutting salt lowers blood pressure by exactly 25% in every patient. Hypertension is the leading cause of death worldwide. Doctors recommend regular exercise and maintaining a healthy weight. Some patients need medication."
+  gold_is_faithful: false
+  bucket: mixed
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (== examples/example_hallucinated.json; 2 fabrications + 1 NEI aside)"
+
+- id: t2-002
+  topic: hypertension
+  source: *src_hyper
+  answer: "Hypertension is another name for high blood pressure. High blood pressure usually has no symptoms. A blood pressure reading of 130/80 mm Hg or higher is high. High blood pressure can raise the risk of heart attack. It can also raise the risk of stroke. It can raise the risk of kidney disease. Reducing salt can help lower blood pressure. Exercising regularly can help lower blood pressure. Keeping a healthy weight can help lower blood pressure. Some people need medicine to control their blood pressure."
+  gold_is_faithful: true
+  bucket: fully_grounded
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (== examples/example_grounded.json)"
+
+# --- fully_grounded (true) -------------------------------------------------------- #
+- id: t2-003
+  topic: type-2-diabetes
+  source: &src_diabetes "Type 2 diabetes occurs when the body cannot use insulin properly, leading to high blood sugar. Common risk factors include being overweight, physical inactivity, and a family history of the disease. Many people have no symptoms in the early stages. Treatment usually starts with diet and exercise, and some patients later need oral medication or insulin. Regular blood sugar monitoring helps manage the condition."
+  answer: "Type 2 diabetes happens when the body cannot use insulin properly, which raises blood sugar. Risk factors include being overweight, physical inactivity, and a family history of the disease. Many people have no symptoms in the early stages. Treatment usually begins with diet and exercise, and some patients later need oral medication or insulin."
+  gold_is_faithful: true
+  bucket: fully_grounded
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed"
+
+- id: t2-004
+  topic: antibiotics
+  source: &src_antibiotics "Antibiotics treat infections caused by bacteria. They do not work against viruses such as those that cause the common cold or the flu. Taking antibiotics when they are not needed can lead to antibiotic resistance, making future infections harder to treat. Patients should finish the full course prescribed by their doctor, even if they feel better."
+  answer: "Antibiotics treat infections caused by bacteria, but they do not work against viruses such as those that cause the common cold or the flu. Taking antibiotics when they are not needed can lead to antibiotic resistance, making future infections harder to treat. Patients should finish the full course prescribed by their doctor, even if they feel better."
+  gold_is_faithful: true
+  bucket: fully_grounded
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed"
+
+- id: t2-005
+  topic: asthma
+  source: &src_asthma "Asthma is a long-term condition that affects the airways in the lungs. During an asthma attack, the airways narrow and make breathing difficult. Common triggers include pollen, dust mites, smoke, and cold air. Many people manage asthma with two types of inhaler: a reliever for sudden symptoms and a preventer used daily. There is currently no cure, but most people can control their symptoms."
+  answer: "Asthma is a long-term condition that affects the airways in the lungs. During an asthma attack, the airways narrow and make breathing difficult. Common triggers include pollen, dust mites, smoke, and cold air. There is currently no cure, but most people can control their symptoms."
+  gold_is_faithful: true
+  bucket: fully_grounded
+  frozen: true
+  provenance: "authored 2026-06-20, human-reviewed (frozen slice)"
+
+- id: t2-006
+  topic: vaccines
+  source: &src_vaccines "Vaccines help the immune system recognize and fight specific germs. The measles, mumps, and rubella (MMR) vaccine is given in two doses, usually in childhood. After vaccination, some people have mild side effects such as a sore arm or low fever. Serious side effects are rare. Measles can cause complications including pneumonia and, in rare cases, brain swelling."
+  answer: "Vaccines help the immune system recognize and fight specific germs. The measles, mumps, and rubella vaccine is given in two doses, usually in childhood. Some people have mild side effects such as a sore arm or low fever, while serious side effects are rare."
+  gold_is_faithful: true
+  bucket: fully_grounded
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed"
+
+# --- single_fabricated_stat (false) ----------------------------------------------- #
+- id: t2-007
+  topic: hypertension
+  source: *src_hyper
+  answer: "High blood pressure usually has no symptoms, and a reading of 130/80 mm Hg or higher is considered high. Over time it raises the risk of heart attack, stroke, and kidney disease. Cutting salt lowers blood pressure by exactly 18% within two weeks."
+  gold_is_faithful: false
+  bucket: single_fabricated_stat
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (final magnitude/timeframe fabricated -> NEI claim)"
+
+- id: t2-008
+  topic: type-2-diabetes
+  source: *src_diabetes
+  answer: "Type 2 diabetes develops when the body cannot use insulin properly. Being overweight and a family history of the disease raise the risk. Exactly 47% of people with type 2 diabetes have no symptoms when they are diagnosed."
+  gold_is_faithful: false
+  bucket: single_fabricated_stat
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (final stat fabricated -> NEI claim)"
+
+- id: t2-009
+  topic: antibiotics
+  source: *src_antibiotics
+  answer: "Antibiotics work against bacterial infections but not viral ones such as the common cold. Finishing the full course your doctor prescribes is important. Antibiotic resistance kills precisely 35,000 people every year."
+  gold_is_faithful: false
+  bucket: single_fabricated_stat
+  frozen: true
+  provenance: "authored 2026-06-20, human-reviewed (frozen slice; final number fabricated -> NEI claim)"
+
+- id: t2-010
+  topic: asthma
+  source: *src_asthma
+  answer: "Asthma is a long-term condition that affects the airways, with triggers such as pollen, smoke, and cold air. There is no cure, but symptoms can usually be controlled. Around 92% of asthma attacks happen at night."
+  gold_is_faithful: false
+  bucket: single_fabricated_stat
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (final stat fabricated -> NEI claim)"
+
+# --- direct_contradiction (false) ------------------------------------------------- #
+- id: t2-011
+  topic: hypertension
+  source: *src_hyper
+  answer: "High blood pressure usually has no symptoms. A reading of 130/80 mm Hg or higher is considered high. High blood pressure has no effect on the risk of stroke."
+  gold_is_faithful: false
+  bucket: direct_contradiction
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (final claim contradicts 'raises the risk of ... stroke')"
+
+- id: t2-012
+  topic: vaccines
+  source: *src_vaccines
+  answer: "The MMR vaccine protects against measles, mumps, and rubella. It is given as a single dose in adulthood."
+  gold_is_faithful: false
+  bucket: direct_contradiction
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (single dose / adulthood contradicts 'two doses, usually in childhood')"
+
+- id: t2-013
+  topic: antibiotics
+  source: *src_antibiotics
+  answer: "Antibiotics treat infections caused by bacteria. They are also an effective treatment for the common cold and the flu."
+  gold_is_faithful: false
+  bucket: direct_contradiction
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (contradicts 'they do not work against viruses such as ... the common cold or the flu')"
+
+- id: t2-014
+  topic: asthma
+  source: *src_asthma
+  answer: "Asthma affects the airways in the lungs. During an asthma attack, the airways widen, which makes breathing easier."
+  gold_is_faithful: false
+  bucket: direct_contradiction
+  frozen: true
+  provenance: "authored 2026-06-20, human-reviewed (frozen slice; 'widen / easier' contradicts 'narrow / difficult')"
+
+# --- faithful_paraphrase (true; ONLY stated facts -> clean 1.0 at tau=1.0) --------- #
+- id: t2-015
+  topic: sleep
+  source: &src_sleep "Most adults need about seven to nine hours of sleep each night. Regular, sufficient sleep supports memory, mood, and the immune system. Going to bed and waking up at consistent times can improve sleep quality. Using screens late at night can make it harder to fall asleep."
+  answer: "Adults generally need somewhere between seven and nine hours of sleep each night. Getting enough sleep regularly supports memory, mood, and the immune system. Keeping consistent bedtimes and wake-up times can improve how well you sleep."
+  gold_is_faithful: true
+  bucket: faithful_paraphrase
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (paraphrase of stated facts only)"
+
+- id: t2-016
+  topic: hand-hygiene
+  source: &src_handhygiene "Washing your hands with soap and water removes germs and helps prevent the spread of illness. You should scrub all surfaces of your hands for at least 20 seconds. When soap and water are not available, an alcohol-based hand sanitizer can be used. Handwashing is especially important before eating and after using the toilet."
+  answer: "Cleaning your hands with soap and water removes germs and helps stop illness from spreading. You should scrub every surface of your hands for at least twenty seconds. If soap and water are not available, an alcohol-based hand sanitizer can be used instead."
+  gold_is_faithful: true
+  bucket: faithful_paraphrase
+  frozen: true
+  provenance: "authored 2026-06-20, human-reviewed (frozen slice; paraphrase of stated facts only)"
+
+- id: t2-017
+  topic: vitamin-d
+  source: &src_vitamind "Vitamin D helps the body absorb calcium and keep bones strong. The skin makes vitamin D when it is exposed to sunlight. Some foods, such as oily fish and fortified milk, also provide vitamin D. A severe lack of vitamin D can lead to soft, weak bones, a condition called rickets in children."
+  answer: "Vitamin D helps the body absorb calcium and keep bones strong. The skin produces vitamin D when it is exposed to sunlight, and foods such as oily fish and fortified milk also provide it. A severe lack of vitamin D can lead to soft, weak bones."
+  gold_is_faithful: true
+  bucket: faithful_paraphrase
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (paraphrase of stated facts only)"
+
+# --- mixed (false) ---------------------------------------------------------------- #
+- id: t2-018
+  topic: type-2-diabetes
+  source: *src_diabetes
+  answer: "Type 2 diabetes occurs when the body cannot use insulin properly. Many people have no symptoms in the early stages. The condition is caused mainly by eating too much fruit."
+  gold_is_faithful: false
+  bucket: mixed
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (two grounded claims + one unsupported 'eating too much fruit' claim)"

@@ -1,0 +1,385 @@
+# Tier-1 gold: fixed {source, claim, gold_label} grounding triples (spec §11, Appendix B.1).
+#
+# Provenance: authored 2026-06-20 with a strong model, then HUMAN-REVIEWED label by
+# label against the Appendix A rubric (single-annotator gold — Shamim — so κ measures
+# detector<->author agreement, not inter-annotator; stated plainly in the README, §11).
+#
+# 45 triples, balanced 15 SUPPORTED / 15 CONTRADICTED / 15 NOT_ENOUGH_INFO, spread across
+# 9 short topics (not one-topic overfit, B.1). ~20% (9 items, 3 per class) are frozen:true
+# — a held-out slice never tuned against (§11). Each topic's source paragraph is defined
+# once with a YAML anchor (&src_*) and referenced (*src_*) by its claims.
+#
+# Rubric (Appendix A): SUPPORTED = source states/entails (paraphrase ok); CONTRADICTED =
+# number/entity swap, opposite direction, or mutually exclusive; NOT_ENOUGH_INFO = source
+# neither establishes nor conflicts (true-but-absent and unquantified-magnitude = NEI).
+#
+# The six Appendix B.1 worked examples are t1-001..t1-006 (verbatim claim text).
+
+# --- hypertension (the §5 worked-example source) ---------------------------------- #
+- id: t1-001
+  topic: hypertension
+  source: &src_hypertension "High blood pressure, also called hypertension, usually has no symptoms. A reading of 130/80 mm Hg or higher is considered high. Over time, high blood pressure raises the risk of heart attack, stroke, and kidney disease. Lifestyle changes such as reducing salt, exercising regularly, and maintaining a healthy weight can help lower blood pressure. Some people also need medicine to keep their blood pressure under control."
+  claim: "A reading of 130/80 mm Hg or higher is high blood pressure."
+  gold_label: SUPPORTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (Appendix B.1 worked example)"
+
+- id: t1-002
+  topic: hypertension
+  source: *src_hypertension
+  claim: "Cutting salt lowers blood pressure by exactly 25% in every patient."
+  gold_label: NOT_ENOUGH_INFO
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (Appendix B.1 worked example; unquantified magnitude -> NEI)"
+
+- id: t1-003
+  topic: hypertension
+  source: *src_hypertension
+  claim: "High blood pressure has no effect on stroke risk."
+  gold_label: CONTRADICTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (Appendix B.1 worked example; opposite direction)"
+
+- id: t1-004
+  topic: hypertension
+  source: *src_hypertension
+  claim: "Everyone with hypertension needs medication."
+  gold_label: CONTRADICTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (Appendix B.1 worked example; 'everyone' vs 'some')"
+
+- id: t1-005
+  topic: hypertension
+  source: *src_hypertension
+  claim: "Hypertension is typically symptomless."
+  gold_label: SUPPORTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (Appendix B.1 worked example)"
+
+- id: t1-006
+  topic: hypertension
+  source: *src_hypertension
+  claim: "Hypertension is the leading cause of death worldwide."
+  gold_label: NOT_ENOUGH_INFO
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (Appendix B.1 worked example; prevalence absent)"
+
+# --- type 2 diabetes -------------------------------------------------------------- #
+- id: t1-007
+  topic: type-2-diabetes
+  source: &src_diabetes "Type 2 diabetes occurs when the body cannot use insulin properly, leading to high blood sugar. Common risk factors include being overweight, physical inactivity, and a family history of the disease. Many people have no symptoms in the early stages. Treatment usually starts with diet and exercise, and some patients later need oral medication or insulin. Regular blood sugar monitoring helps manage the condition."
+  claim: "Type 2 diabetes involves the body not using insulin properly."
+  gold_label: SUPPORTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed"
+
+- id: t1-008
+  topic: type-2-diabetes
+  source: *src_diabetes
+  claim: "Being overweight is a risk factor for type 2 diabetes."
+  gold_label: SUPPORTED
+  frozen: true
+  provenance: "authored 2026-06-20, human-reviewed (frozen slice)"
+
+- id: t1-009
+  topic: type-2-diabetes
+  source: *src_diabetes
+  claim: "Type 2 diabetes always causes obvious symptoms from the very first day."
+  gold_label: CONTRADICTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (opposite of 'no symptoms in the early stages')"
+
+- id: t1-010
+  topic: type-2-diabetes
+  source: *src_diabetes
+  claim: "Type 2 diabetes can only be treated with insulin injections."
+  gold_label: CONTRADICTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed ('only insulin' conflicts with diet/exercise/oral)"
+
+- id: t1-011
+  topic: type-2-diabetes
+  source: *src_diabetes
+  claim: "Type 2 diabetes is more common in people over the age of 45."
+  gold_label: NOT_ENOUGH_INFO
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (age absent from source)"
+
+- id: t1-012
+  topic: type-2-diabetes
+  source: *src_diabetes
+  claim: "Type 2 diabetes affects one in ten adults worldwide."
+  gold_label: NOT_ENOUGH_INFO
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (prevalence absent)"
+
+# --- vaccines (MMR) --------------------------------------------------------------- #
+- id: t1-013
+  topic: vaccines
+  source: &src_vaccines "Vaccines help the immune system recognize and fight specific germs. The measles, mumps, and rubella (MMR) vaccine is given in two doses, usually in childhood. After vaccination, some people have mild side effects such as a sore arm or low fever. Serious side effects are rare. Measles can cause complications including pneumonia and, in rare cases, brain swelling."
+  claim: "The MMR vaccine protects against measles, mumps, and rubella."
+  gold_label: SUPPORTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed"
+
+- id: t1-014
+  topic: vaccines
+  source: *src_vaccines
+  claim: "The MMR vaccine is given in two doses."
+  gold_label: SUPPORTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed"
+
+- id: t1-015
+  topic: vaccines
+  source: *src_vaccines
+  claim: "The MMR vaccine is given as a single dose."
+  gold_label: CONTRADICTED
+  frozen: true
+  provenance: "authored 2026-06-20, human-reviewed (frozen slice; 'single' vs 'two doses')"
+
+- id: t1-016
+  topic: vaccines
+  source: *src_vaccines
+  claim: "Serious side effects from the MMR vaccine are very common."
+  gold_label: CONTRADICTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (opposite of 'serious side effects are rare')"
+
+- id: t1-017
+  topic: vaccines
+  source: *src_vaccines
+  claim: "More than 90% of children receive the MMR vaccine."
+  gold_label: NOT_ENOUGH_INFO
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (coverage rate absent)"
+
+- id: t1-018
+  topic: vaccines
+  source: *src_vaccines
+  claim: "Measles vaccination became mandatory in all countries in 2020."
+  gold_label: NOT_ENOUGH_INFO
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (policy/date absent)"
+
+# --- antibiotics ------------------------------------------------------------------ #
+- id: t1-019
+  topic: antibiotics
+  source: &src_antibiotics "Antibiotics treat infections caused by bacteria. They do not work against viruses such as those that cause the common cold or the flu. Taking antibiotics when they are not needed can lead to antibiotic resistance, making future infections harder to treat. Patients should finish the full course prescribed by their doctor, even if they feel better."
+  claim: "Antibiotics are used to treat bacterial infections."
+  gold_label: SUPPORTED
+  frozen: true
+  provenance: "authored 2026-06-20, human-reviewed (frozen slice)"
+
+- id: t1-020
+  topic: antibiotics
+  source: *src_antibiotics
+  claim: "Misusing antibiotics can contribute to antibiotic resistance."
+  gold_label: SUPPORTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed"
+
+- id: t1-021
+  topic: antibiotics
+  source: *src_antibiotics
+  claim: "Antibiotics are an effective treatment for the common cold."
+  gold_label: CONTRADICTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed ('do not work against viruses such as the common cold')"
+
+- id: t1-022
+  topic: antibiotics
+  source: *src_antibiotics
+  claim: "It is fine to stop taking antibiotics as soon as you feel better."
+  gold_label: CONTRADICTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (conflicts with 'finish the full course even if they feel better')"
+
+- id: t1-023
+  topic: antibiotics
+  source: *src_antibiotics
+  claim: "Antibiotic resistance causes 1.2 million deaths each year."
+  gold_label: NOT_ENOUGH_INFO
+  frozen: true
+  provenance: "authored 2026-06-20, human-reviewed (frozen slice; number absent)"
+
+- id: t1-024
+  topic: antibiotics
+  source: *src_antibiotics
+  claim: "Most antibiotics are taken twice a day."
+  gold_label: NOT_ENOUGH_INFO
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (dosing frequency absent)"
+
+# --- asthma ----------------------------------------------------------------------- #
+- id: t1-025
+  topic: asthma
+  source: &src_asthma "Asthma is a long-term condition that affects the airways in the lungs. During an asthma attack, the airways narrow and make breathing difficult. Common triggers include pollen, dust mites, smoke, and cold air. Many people manage asthma with two types of inhaler: a reliever for sudden symptoms and a preventer used daily. There is currently no cure, but most people can control their symptoms."
+  claim: "Asthma affects the airways in the lungs."
+  gold_label: SUPPORTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed"
+
+- id: t1-026
+  topic: asthma
+  source: *src_asthma
+  claim: "Pollen can trigger asthma symptoms."
+  gold_label: SUPPORTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed"
+
+- id: t1-027
+  topic: asthma
+  source: *src_asthma
+  claim: "Asthma can be permanently cured with a single inhaler."
+  gold_label: CONTRADICTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (conflicts with 'there is currently no cure')"
+
+- id: t1-028
+  topic: asthma
+  source: *src_asthma
+  claim: "During an asthma attack the airways widen."
+  gold_label: CONTRADICTED
+  frozen: true
+  provenance: "authored 2026-06-20, human-reviewed (frozen slice; 'widen' vs 'narrow')"
+
+- id: t1-029
+  topic: asthma
+  source: *src_asthma
+  claim: "About 260 million people worldwide have asthma."
+  gold_label: NOT_ENOUGH_INFO
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (prevalence absent)"
+
+- id: t1-030
+  topic: asthma
+  source: *src_asthma
+  claim: "Swimming is the best exercise for people with asthma."
+  gold_label: NOT_ENOUGH_INFO
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (not addressed)"
+
+# --- vitamin D -------------------------------------------------------------------- #
+- id: t1-031
+  topic: vitamin-d
+  source: &src_vitamind "Vitamin D helps the body absorb calcium and keep bones strong. The skin makes vitamin D when it is exposed to sunlight. Some foods, such as oily fish and fortified milk, also provide vitamin D. A severe lack of vitamin D can lead to soft, weak bones, a condition called rickets in children."
+  claim: "Vitamin D helps the body absorb calcium."
+  gold_label: SUPPORTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed"
+
+- id: t1-032
+  topic: vitamin-d
+  source: *src_vitamind
+  claim: "The body cannot make any vitamin D from sunlight."
+  gold_label: CONTRADICTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (conflicts with 'the skin makes vitamin D when exposed to sunlight')"
+
+- id: t1-033
+  topic: vitamin-d
+  source: *src_vitamind
+  claim: "Most adults need 600 IU of vitamin D per day."
+  gold_label: NOT_ENOUGH_INFO
+  frozen: true
+  provenance: "authored 2026-06-20, human-reviewed (frozen slice; dosage absent)"
+
+# --- sleep ------------------------------------------------------------------------ #
+- id: t1-034
+  topic: sleep
+  source: &src_sleep "Most adults need about seven to nine hours of sleep each night. Regular, sufficient sleep supports memory, mood, and the immune system. Going to bed and waking up at consistent times can improve sleep quality. Using screens late at night can make it harder to fall asleep."
+  claim: "Most adults need about seven to nine hours of sleep each night."
+  gold_label: SUPPORTED
+  frozen: true
+  provenance: "authored 2026-06-20, human-reviewed (frozen slice)"
+
+- id: t1-035
+  topic: sleep
+  source: *src_sleep
+  claim: "Adults function best on only three hours of sleep a night."
+  gold_label: CONTRADICTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (conflicts with 'seven to nine hours')"
+
+- id: t1-036
+  topic: sleep
+  source: *src_sleep
+  claim: "Drinking warm milk before bed guarantees deep sleep."
+  gold_label: NOT_ENOUGH_INFO
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (warm milk absent)"
+
+# --- hand hygiene ----------------------------------------------------------------- #
+- id: t1-037
+  topic: hand-hygiene
+  source: &src_handhygiene "Washing your hands with soap and water removes germs and helps prevent the spread of illness. You should scrub all surfaces of your hands for at least 20 seconds. When soap and water are not available, an alcohol-based hand sanitizer can be used. Handwashing is especially important before eating and after using the toilet."
+  claim: "An alcohol-based hand sanitizer can be used when soap and water are unavailable."
+  gold_label: SUPPORTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed"
+
+- id: t1-038
+  topic: hand-hygiene
+  source: *src_handhygiene
+  claim: "Washing your hands spreads more germs than not washing them at all."
+  gold_label: CONTRADICTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (conflicts with 'removes germs and helps prevent the spread')"
+
+- id: t1-039
+  topic: hand-hygiene
+  source: *src_handhygiene
+  claim: "Handwashing reduces respiratory infections by 50 percent."
+  gold_label: NOT_ENOUGH_INFO
+  frozen: true
+  provenance: "authored 2026-06-20, human-reviewed (frozen slice; number absent)"
+
+# --- added sugar / sugary drinks -------------------------------------------------- #
+- id: t1-040
+  topic: added-sugar
+  source: &src_sugar "Sugary drinks such as soda are a major source of added sugar in many diets. Drinking too many sugary drinks is linked to weight gain and tooth decay. Water and unsweetened drinks are healthier choices. Reading nutrition labels can help people see how much sugar a product contains."
+  claim: "Sugary drinks such as soda are a major source of added sugar in many diets."
+  gold_label: SUPPORTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed"
+
+- id: t1-041
+  topic: added-sugar
+  source: *src_sugar
+  claim: "Drinking too many sugary drinks is linked to tooth decay."
+  gold_label: SUPPORTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed"
+
+- id: t1-042
+  topic: added-sugar
+  source: *src_sugar
+  claim: "Sugary drinks have no connection to weight gain."
+  gold_label: CONTRADICTED
+  frozen: true
+  provenance: "authored 2026-06-20, human-reviewed (frozen slice; conflicts with 'linked to weight gain')"
+
+- id: t1-043
+  topic: added-sugar
+  source: *src_sugar
+  claim: "Soda is the healthiest beverage choice."
+  gold_label: CONTRADICTED
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (conflicts with 'water and unsweetened drinks are healthier')"
+
+- id: t1-044
+  topic: added-sugar
+  source: *src_sugar
+  claim: "Adults should consume no more than 25 grams of added sugar per day."
+  gold_label: NOT_ENOUGH_INFO
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (number absent)"
+
+- id: t1-045
+  topic: added-sugar
+  source: *src_sugar
+  claim: "Diet soda is just as harmful as regular soda."
+  gold_label: NOT_ENOUGH_INFO
+  frozen: false
+  provenance: "authored 2026-06-20, human-reviewed (diet soda not addressed)"

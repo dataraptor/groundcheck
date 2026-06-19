@@ -12,6 +12,15 @@ from .models import Label
 DECOMPOSE_MODEL = "claude-sonnet-4-6"
 GROUND_MODEL = "claude-opus-4-8"
 
+# --- OpenAI / Azure provider (Split 02 divergence resolution) ----------------- #
+# The only API key supplied in this environment is Azure OpenAI (gpt-5.5), NOT an
+# Anthropic key (see PROGRESS.md "Open divergences"). The provider seam (llm.py)
+# therefore ships an OpenAIProvider alongside AnthropicProvider; MockProvider stays
+# the default for all no-key tests / CI / the §5 demo. The logical decompose/ground
+# routing above remains Anthropic (pinned by the spec); when the OpenAI provider is
+# active, a single Azure deployment (gpt-5.5) serves both steps.
+OPENAI_MODEL = "gpt-5.5"
+
 # --- pricing, USD *per token* (spec §10; README API facts) -------------------- #
 # Source values, per 1M tokens:
 #   Opus 4.8   = $5 input  / $25 output
@@ -19,6 +28,10 @@ GROUND_MODEL = "claude-opus-4-8"
 PRICING: dict[str, dict[str, float]] = {
     GROUND_MODEL: {"input": 5e-6, "output": 25e-6},  # Opus 4.8: $5 / $25 per MTok
     DECOMPOSE_MODEL: {"input": 3e-6, "output": 15e-6},  # Sonnet 4.6: $3 / $15 per MTok
+    # gpt-5.5 (Azure) list price is NOT in the pinned README API facts — these are
+    # documented ESTIMATES so compute_cost() works for the OpenAI path. Treat the
+    # OpenAI-path cost figure as approximate (the demo/eval caption should say so).
+    OPENAI_MODEL: {"input": 1.25e-6, "output": 10e-6},  # gpt-5.5 estimate: ~$1.25 / ~$10 per MTok
 }
 
 # --- cache-bucket multipliers vs the fresh input price (README API facts) ----- #

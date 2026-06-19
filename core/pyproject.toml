@@ -9,8 +9,11 @@ description = "Faithfulness Firewall engine — verify an answer's claims agains
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2,<3",
-    # anthropic is imported lazily inside functions (Split 02+); listing it here is fine.
+    # Both SDKs are imported lazily inside the providers (Split 02+) so `import
+    # groundcheck` stays key-free; listing them here is fine. `openai` backs the
+    # Azure gpt-5.5 provider (the only key available — see PROGRESS.md divergence).
     "anthropic>=0.40",
+    "openai>=1.40",
 ]
 
 [project.optional-dependencies]

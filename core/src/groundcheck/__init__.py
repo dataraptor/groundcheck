@@ -14,6 +14,7 @@ from .ground import (
     ground_once,
     majority_label,
 )
+from .highlight import highlight_answer
 from .models import (
     ClaimResult,
     DecomposedClaim,
@@ -22,6 +23,7 @@ from .models import (
     GroundingVerdict,
     Label,
 )
+from .pipeline import check
 from .prompts import PROMPT_VERSION
 
 __all__ = [
@@ -39,4 +41,6 @@ __all__ = [
     "majority_label",
     "confidence",
     "GroundOutcome",
+    "check",
+    "highlight_answer",
 ]

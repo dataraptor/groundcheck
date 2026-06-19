@@ -162,3 +162,94 @@ WORKED_EXAMPLE_VERDICTS: dict[str, GroundingVerdict | list[GroundingVerdict]] = 
 # with refused=True. Split 10 drives the "refusal-affected" UI state by feeding an
 # answer that decomposes into a claim carrying this phrase — no key-guessing needed.
 REFUSAL_TRIGGER = "please refuse to judge this claim"
+
+
+# --------------------------------------------------------------------------- #
+# The fully-grounded counter-example (Split 05 — examples/example_grounded.json)
+# --------------------------------------------------------------------------- #
+# A second answer over the *same* hypertension source whose every claim is genuinely
+# SUPPORTED, so it scores 100% — the "clean" demo beside the hallucinated one. Per
+# spec B.2's authoring caution, every sentence paraphrases ONLY a fact the source
+# states, and every supporting span below is a verbatim SOURCE substring (a test
+# pins both). The answer is written as already-atomic one-fact sentences so the mock
+# decomposition is one claim per sentence (claim == source_sentence), mirroring the
+# hallucinated fixture. ⚠️ Mock matching is substring-based on the *claim* text, so
+# these claims are worded to share no claim/answer substring with the hallucinated
+# set (a collision would let the wrong canned verdict answer a grounding call).
+
+GROUNDED_EXAMPLE_SOURCE = WORKED_EXAMPLE_SOURCE  # same source document
+
+GROUNDED_EXAMPLE_ANSWER = (
+    "Hypertension is another name for high blood pressure. High blood pressure "
+    "usually has no symptoms. A blood pressure reading of 130/80 mm Hg or higher is "
+    "high. High blood pressure can raise the risk of heart attack. It can also raise "
+    "the risk of stroke. It can raise the risk of kidney disease. Reducing salt can "
+    "help lower blood pressure. Exercising regularly can help lower blood pressure. "
+    "Keeping a healthy weight can help lower blood pressure. Some people need "
+    "medicine to control their blood pressure."
+)
+
+
+def _grounded_claim(text: str) -> DecomposedClaim:
+    # Each grounded answer sentence is itself one atomic claim.
+    return DecomposedClaim(claim=text, source_sentence=text)
+
+
+# (claim text, verbatim SOURCE span supporting it) — all SUPPORTED.
+_GROUNDED_PAIRS: list[tuple[str, str]] = [
+    (
+        "Hypertension is another name for high blood pressure.",
+        "High blood pressure, also called hypertension",
+    ),
+    ("High blood pressure usually has no symptoms.", "usually has no symptoms"),
+    (
+        "A blood pressure reading of 130/80 mm Hg or higher is high.",
+        "A reading of 130/80 mm Hg or higher is considered high.",
+    ),
+    (
+        "High blood pressure can raise the risk of heart attack.",
+        "raises the risk of heart attack, stroke, and kidney disease",
+    ),
+    (
+        "It can also raise the risk of stroke.",
+        "raises the risk of heart attack, stroke, and kidney disease",
+    ),
+    (
+        "It can raise the risk of kidney disease.",
+        "raises the risk of heart attack, stroke, and kidney disease",
+    ),
+    (
+        "Reducing salt can help lower blood pressure.",
+        "reducing salt, exercising regularly, and maintaining a healthy weight can "
+        "help lower blood pressure",
+    ),
+    (
+        "Exercising regularly can help lower blood pressure.",
+        "reducing salt, exercising regularly, and maintaining a healthy weight can "
+        "help lower blood pressure",
+    ),
+    (
+        # "Keeping" (not "Maintaining") so this claim is NOT a verbatim substring of
+        # the SOURCE — the mock matches keys against SOURCE+CLAIM, so a source-substring
+        # key would hijack every grounding call (test_no_verdict_key_is_source_substring).
+        "Keeping a healthy weight can help lower blood pressure.",
+        "reducing salt, exercising regularly, and maintaining a healthy weight can "
+        "help lower blood pressure",
+    ),
+    (
+        "Some people need medicine to control their blood pressure.",
+        "Some people also need medicine to keep their blood pressure under control.",
+    ),
+]
+
+GROUNDED_EXAMPLE_CLAIMS: list[DecomposedClaim] = [
+    _grounded_claim(text) for text, _span in _GROUNDED_PAIRS
+]
+
+GROUNDED_EXAMPLE_DECOMPOSITION = Decomposition(claims=GROUNDED_EXAMPLE_CLAIMS)
+
+GROUNDED_EXAMPLE_KEY = GROUNDED_EXAMPLE_ANSWER
+
+GROUNDED_EXAMPLE_VERDICTS: dict[str, GroundingVerdict] = {
+    text: _supported(span, "Stated in the source.") for text, span in _GROUNDED_PAIRS
+}

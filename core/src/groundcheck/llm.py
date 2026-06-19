@@ -385,13 +385,22 @@ class MockProvider:
             self._seed_worked_example()
 
     def _seed_worked_example(self) -> None:
-        """Register the full §5 worked example: the decomposition (keyed on the answer)
-        plus the eight grounding verdicts (keyed per claim, two of them split votes) and
-        the documented refusal trigger. Imported lazily to avoid a module-load cycle."""
+        """Register the canned demo fixtures for no-key runs. Imported lazily to avoid
+        a module-load cycle.
+
+        Two examples are seeded: the §5 *hallucinated* worked example (decomposition
+        keyed on the answer + eight grounding verdicts, two of them split votes →
+        62%) and the fully-grounded counter-example (decomposition + all-SUPPORTED
+        verdicts → 100%). The documented refusal trigger is also registered. The two
+        sets share no claim/answer substring, so each grounding call resolves to its
+        own canned verdict (see ``worked_example`` notes)."""
         from . import worked_example
 
         self.register(worked_example.WORKED_EXAMPLE_KEY, worked_example.WORKED_EXAMPLE_DECOMPOSITION)
         for claim, verdict in worked_example.WORKED_EXAMPLE_VERDICTS.items():
+            self.register(claim, verdict)
+        self.register(worked_example.GROUNDED_EXAMPLE_KEY, worked_example.GROUNDED_EXAMPLE_DECOMPOSITION)
+        for claim, verdict in worked_example.GROUNDED_EXAMPLE_VERDICTS.items():
             self.register(claim, verdict)
         self.register(worked_example.REFUSAL_TRIGGER, REFUSAL)
 

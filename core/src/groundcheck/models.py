@@ -80,6 +80,16 @@ class FaithfulnessReport(BaseModel):
     latency_s: float
     prompt_version: str
     n_runs: int
+    # --- presentation fields, set by the pipeline AFTER from_claims (Split 05) ----- #
+    # Both are optional with the defaults below so the Split-01 ``from_claims`` path
+    # (and its tests) still build a valid report; the pipeline fills them in via
+    # ``highlight_answer`` and they serialize into the API/UI response. See PROGRESS
+    # "Open divergences" — these are required by Splits 08/10/11.
+    highlighted_html: str = ""  # answer with worst-verdict <span> highlighting (spec §8)
+    unlocated_sentences: list[str] = Field(
+        default_factory=list,
+        description="source_sentences the highlighter could not locate in the answer (§8 give-up).",
+    )
 
     @classmethod
     def from_claims(

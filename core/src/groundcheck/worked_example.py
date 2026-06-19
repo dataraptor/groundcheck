@@ -17,7 +17,7 @@ drift would make mock mode fall back to default verdicts and silently break the
 
 from __future__ import annotations
 
-from .models import DecomposedClaim, Decomposition
+from .models import DecomposedClaim, Decomposition, GroundingVerdict
 
 # --- the demo inputs (verbatim from app/GroundCheck.dc.html this.SRC / this.ANS) --- #
 WORKED_EXAMPLE_SOURCE = (
@@ -83,3 +83,82 @@ WORKED_EXAMPLE_DECOMPOSITION = Decomposition(claims=WORKED_EXAMPLE_CLAIMS)
 # (lowercase + whitespace-collapsed) and matches it as a substring of the request's
 # ``ANSWER:\n<answer>`` user text, so a decompose call on this answer resolves here.
 WORKED_EXAMPLE_KEY = WORKED_EXAMPLE_ANSWER
+
+
+# --- the eight grounding verdicts (spec §5; Split-04 deliverable) ------------------ #
+# Five SUPPORTED + three NOT_ENOUGH_INFO → 5/8 = 62% (the money demo). Verdicts key on
+# the *claim* text, which MockProvider matches as a substring of each ground call's
+# ``CLAIM:`` block (no claim is a verbatim substring of the source, so only its own
+# claim matches). ``supporting_span`` is a verbatim SOURCE substring for SUPPORTED and
+# "" for NEI (a test pins both invariants).
+#
+# Claims 2 and 5 are SPLIT VOTES — expressed as an ORDERED SEQUENCE of three verdicts
+# ``[NEI, NEI, SUPPORTED]`` that MockProvider consumes by call index, so three
+# identical ``ground_once`` calls return different labels in order → votes 2·1,
+# confidence 0.67. Claim 6 is a clean ``NEI`` (single verdict → 3·0, confidence 1.0).
+# This reproduces the dc-html mockup's hardcoded data and gives n_low_confidence == 2
+# in Split 05. ⚠️ Load-bearing: Splits 09/11 assert the "exactly 25%" claim (claim 5)
+# expands to 2·1 / 0.67 — which only holds while claim 5 stays a split vote here.
+
+
+def _supported(span: str, rationale: str) -> GroundingVerdict:
+    return GroundingVerdict(label="SUPPORTED", supporting_span=span, rationale=rationale)
+
+
+def _nei(rationale: str) -> GroundingVerdict:
+    return GroundingVerdict(label="NOT_ENOUGH_INFO", supporting_span="", rationale=rationale)
+
+
+# The spurious minority SUPPORTED vote in a split: it is never surfaced (the winner is
+# NEI, and the representative span/rationale come from the first NEI run), so its
+# content only needs to be schema-valid and honestly labelled as the noise vote.
+_SPURIOUS_SUPPORTED = _supported("", "(spurious minority run — not the surfaced verdict)")
+
+WORKED_EXAMPLE_VERDICTS: dict[str, GroundingVerdict | list[GroundingVerdict]] = {
+    # 1 — SUPPORTED (clean 3·0)
+    WORKED_EXAMPLE_CLAIMS[0].claim: _supported(
+        "usually has no symptoms",
+        "The source states hypertension usually has no symptoms.",
+    ),
+    # 2 — NOT_ENOUGH_INFO (split vote 2·1 → confidence 0.67)
+    WORKED_EXAMPLE_CLAIMS[1].claim: [
+        _nei("The source is silent on awareness."),
+        _nei("The source is silent on awareness."),
+        _SPURIOUS_SUPPORTED,
+    ],
+    # 3 — SUPPORTED (clean 3·0)
+    WORKED_EXAMPLE_CLAIMS[2].claim: _supported(
+        "A reading of 130/80 mm Hg or higher is considered high.",
+        "Stated verbatim in the source.",
+    ),
+    # 4 — SUPPORTED (clean 3·0)
+    WORKED_EXAMPLE_CLAIMS[3].claim: _supported(
+        "raises the risk of heart attack, stroke, and kidney disease",
+        "The source lists these risks.",
+    ),
+    # 5 — NOT_ENOUGH_INFO (split vote 2·1 → confidence 0.67) — the fabricated "exactly 25%"
+    WORKED_EXAMPLE_CLAIMS[4].claim: [
+        _nei("The source gives no magnitude for reducing salt."),
+        _nei("The source gives no magnitude for reducing salt."),
+        _SPURIOUS_SUPPORTED,
+    ],
+    # 6 — NOT_ENOUGH_INFO (clean 3·0) — the fabricated "leading cause of death"
+    WORKED_EXAMPLE_CLAIMS[5].claim: _nei("The source is silent on mortality ranking."),
+    # 7 — SUPPORTED (clean 3·0)
+    WORKED_EXAMPLE_CLAIMS[6].claim: _supported(
+        "Lifestyle changes such as reducing salt, exercising regularly, and "
+        "maintaining a healthy weight can help lower blood pressure.",
+        "The source recommends exercise and a healthy weight.",
+    ),
+    # 8 — SUPPORTED (clean 3·0)
+    WORKED_EXAMPLE_CLAIMS[7].claim: _supported(
+        "Some people also need medicine to keep their blood pressure under control.",
+        "The source notes some people also need medicine.",
+    ),
+}
+
+# Pinned, documented trigger for the refusal → NEI path (spec §17). Grounding any claim
+# whose text contains this phrase makes every run refuse, so the GroundOutcome is NEI
+# with refused=True. Split 10 drives the "refusal-affected" UI state by feeding an
+# answer that decomposes into a claim carrying this phrase — no key-guessing needed.
+REFUSAL_TRIGGER = "please refuse to judge this claim"

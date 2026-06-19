@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import os
 import re
+import threading
 from dataclasses import dataclass
 from typing import Any, Callable, Optional, Protocol
 
@@ -349,7 +350,10 @@ class MockProvider:
     Register canned responses keyed on a substring of the (normalized) user text:
     the first registered key that is a substring of the request's flattened user
     text wins. A registered value of :data:`REFUSAL` forces a refusal for matching
-    input. ``responses`` may instead be a callable
+    input. A registered value that is a **list** of models is an *ordered sequence*
+    consumed by call index (cycling on its length) — this is how a split vote is
+    expressed: three identical ``ground_once`` calls return different verdicts in
+    order (Split 04). ``responses`` may instead be a callable
     ``(output_model, normalized_text) -> BaseModel | REFUSAL | None`` for full
     control; ``refuse_when(normalized_text) -> bool`` forces a global refusal rule.
     """
@@ -364,6 +368,13 @@ class MockProvider:
         self._callable = responses if callable(responses) else None
         self._responses: dict[str, Any] = {} if self._callable else dict(responses or {})
         self._refuse_when = refuse_when
+        # Per-key consumption index for ordered-sequence responses (split votes), keyed
+        # on the normalized registration key so concurrent grounding of *different*
+        # claims (Split 05's pool) never shares a counter. Guarded by a lock so the pool
+        # is race-free; cycling on len() makes a default n=3 / 3-long sequence reset
+        # cleanly between successive ground() calls.
+        self._seq_index: dict[str, int] = {}
+        self._seq_lock = threading.Lock()
         # Auto-seed the §5 worked-example fixtures into a bare MockProvider so the
         # no-key demo (`cli check --example`) and tests reproduce the canonical 62%
         # run. Default: seed only when the caller passed no explicit `responses`
@@ -374,14 +385,22 @@ class MockProvider:
             self._seed_worked_example()
 
     def _seed_worked_example(self) -> None:
-        """Register the §5 worked-example responses (decomposition here; Split 04
-        adds verdicts). Imported lazily to avoid a module-load import cycle."""
+        """Register the full §5 worked example: the decomposition (keyed on the answer)
+        plus the eight grounding verdicts (keyed per claim, two of them split votes) and
+        the documented refusal trigger. Imported lazily to avoid a module-load cycle."""
         from . import worked_example
 
         self.register(worked_example.WORKED_EXAMPLE_KEY, worked_example.WORKED_EXAMPLE_DECOMPOSITION)
+        for claim, verdict in worked_example.WORKED_EXAMPLE_VERDICTS.items():
+            self.register(claim, verdict)
+        self.register(worked_example.REFUSAL_TRIGGER, REFUSAL)
 
     def register(self, key: str, value: Any) -> None:
-        """Register a canned response (or :data:`REFUSAL`) for inputs containing ``key``."""
+        """Register a canned response for inputs containing ``key``.
+
+        ``value`` may be a single model, :data:`REFUSAL`, or a *list* of models (an
+        ordered sequence consumed by call index — a split vote).
+        """
         self._responses[_normalize(key)] = value
 
     def _lookup(self, output_model: type[BaseModel], text: str) -> Any:
@@ -397,7 +416,23 @@ class MockProvider:
             # scanning later keys.
             if value is REFUSAL or isinstance(value, output_model):
                 return value
+            # An ordered sequence (split vote): match only if it carries this
+            # output_model, then consume the next element by per-key call index.
+            if isinstance(value, list) and value and isinstance(value[0], output_model):
+                return self._next_in_sequence(key, value)
         return None
+
+    def _next_in_sequence(self, key: str, sequence: list[Any]) -> Any:
+        """Return the next element of an ordered-sequence response, cycling on length.
+
+        The index is per key and lock-guarded so Split 05's thread pool (one claim per
+        worker) stays race-free; cycling makes a default n=3 over a 3-long sequence
+        reset cleanly, so repeated ``ground()`` calls reproduce the same vote spread.
+        """
+        with self._seq_lock:
+            idx = self._seq_index.get(key, 0)
+            self._seq_index[key] = idx + 1
+        return sequence[idx % len(sequence)]
 
     def parse(
         self,

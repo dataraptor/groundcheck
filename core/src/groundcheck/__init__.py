@@ -7,6 +7,13 @@ lazy-import their network dependencies inside functions.
 """
 
 from .decompose import DecomposeOutcome, decompose
+from .ground import (
+    GroundOutcome,
+    confidence,
+    ground,
+    ground_once,
+    majority_label,
+)
 from .models import (
     ClaimResult,
     DecomposedClaim,
@@ -27,4 +34,9 @@ __all__ = [
     "PROMPT_VERSION",
     "decompose",
     "DecomposeOutcome",
+    "ground",
+    "ground_once",
+    "majority_label",
+    "confidence",
+    "GroundOutcome",
 ]

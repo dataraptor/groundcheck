@@ -46,6 +46,11 @@ N_RUNS_MAX = 5
 # --- decompose call budget (spec §17 truncation guard) ------------------------ #
 DECOMPOSE_MAX_TOKENS = 4096
 
+# --- ground call budget (Split 04) -------------------------------------------- #
+# A grounding verdict is tiny (label + a one-span + a one-sentence rationale), so a
+# small cap is plenty; large supporting spans on big sources still fit comfortably.
+GROUND_MAX_TOKENS = 1024
+
 # --- concurrency (spec §10) --------------------------------------------------- #
 THREAD_POOL_WORKERS = 6
 

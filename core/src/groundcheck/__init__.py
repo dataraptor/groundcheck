@@ -15,6 +15,15 @@ from .ground import (
     majority_label,
 )
 from .highlight import highlight_answer
+from .metrics import (
+    accuracy,
+    binary_prf,
+    cohen_kappa,
+    confusion_matrix,
+    macro_f1,
+    per_class_prf,
+    tier1_report,
+)
 from .models import (
     ClaimResult,
     DecomposedClaim,
@@ -43,4 +52,11 @@ __all__ = [
     "GroundOutcome",
     "check",
     "highlight_answer",
+    "confusion_matrix",
+    "per_class_prf",
+    "macro_f1",
+    "accuracy",
+    "cohen_kappa",
+    "tier1_report",
+    "binary_prf",
 ]

@@ -1,12 +1,109 @@
-# api
+# api — GroundCheck HTTP service
 
-The backend service — a thin HTTP layer that exposes the engine over a network.
+A **thin** FastAPI adapter over the `groundcheck` engine. It holds no business logic
+(spec §4): it validates a request, calls `groundcheck.check()`, surfaces any engine
+warnings, maps every edge case to a clean JSON body (never a stack trace, spec §17),
+and serves the static `app/` front-end from the **same origin** so the page can
+`fetch('/check')` with no CORS.
+
+## Install (editable, dev)
+
+Install the engine first, then this layer:
+
+```bash
+python -m pip install -e ./core[dev]
+python -m pip install -e "./api[dev]"     # quotes: zsh treats [dev] as a glob
+```
+
+`api` declares `groundcheck>=0.1`; installing `core` editable first satisfies it from
+local source (pip never reaches PyPI).
+
+## Run
+
+Key-free demo (the whole stack works with no API key):
+
+```bash
+GROUNDCHECK_LLM=mock uvicorn groundcheck_api.main:app --reload
+```
+
+With a real model, drop `GROUNDCHECK_LLM` and provide credentials — either
+`ANTHROPIC_API_KEY`, or Azure OpenAI (`AZURE_OPENAI_API_KEY` + `AZURE_OPENAI_ENDPOINT`;
+the only key available in this repo — see `tmp/split/PROGRESS.md` divergences). The
+engine's `get_provider()` auto-detects which credential is present.
+
+Then open <http://localhost:8000/> — it redirects to the app.
+
+## Endpoints
+
+| Method | Path                       | Purpose |
+|--------|----------------------------|---------|
+| POST   | `/check`                   | Verify an answer against a source → full `FaithfulnessReport` + `warnings`. |
+| GET    | `/examples`                | The two worked examples, for the frontend to prefill. |
+| GET    | `/health`                  | Liveness + prompt/model identity + `mock_mode`. Never touches the network. |
+| GET    | `/`                        | Redirect → `/app/GroundCheck.dc.html`. |
+| `/app/*` | (static)                 | The front-end (`GroundCheck.dc.html`, `support.js`), same-origin. |
+
+### `POST /check`
+
+Request:
+
+```json
+{ "source": "…", "answer": "…", "n": 3 }
+```
+
+* `n` is bounded to the engine's supported range (`N_RUNS_MIN`–`N_RUNS_MAX`, i.e. 1–5).
+  Out of range → **422** (request validation).
+* An empty / whitespace `answer` is **valid** → the N/A path
+  (`faithfulness_score: null`, `n_claims: 0`), **200** — not an error.
+
+Response (**200**): the engine's `FaithfulnessReport` verbatim, plus `warnings`:
+`claims[]` (each with `claim, source_sentence, label, supporting_span, rationale,
+votes, confidence, refused`), the counts (`n_claims, n_supported, n_contradicted,
+n_not_enough_info, n_low_confidence, n_refused`), `faithfulness_score` (float | null),
+`cost_usd`, `latency_s`, `prompt_version`, `n_runs`, `highlighted_html`,
+`unlocated_sentences`, and `warnings` (surfaced notices, e.g. oversize truncation).
+
+Errors (no stack trace ever reaches the client):
+
+| Status | `code`            | When |
+|--------|-------------------|------|
+| 422    | (validation)      | `n` out of range / malformed body. |
+| 503    | `missing_api_key` | A real provider was selected but no key is configured. |
+| 502    | `engine_error`    | Any other engine/SDK failure (full trace logged server-side only). |
+
+### `GET /health`
+
+```json
+{ "status": "ok", "prompt_version": "v3", "mock_mode": true,
+  "models": { "decompose": "claude-sonnet-4-6", "ground": "claude-opus-4-8" } }
+```
+
+## Paths & CORS
+
+* **Same-origin** is the production path — the app is served under `/app/…` on the
+  same host as `/check`, so **no CORS is needed**. A dev-only `CORSMiddleware`
+  allowing loopback origins (`localhost` / `127.0.0.1`) is included for when the
+  frontend is opened on a different local port.
+* The `app/` and `core/examples/` directories are resolved **relative to the repo**
+  (computed from `__file__`), so `uvicorn` works regardless of the launch directory.
+  Override with `GROUNDCHECK_APP_DIR` / `GROUNDCHECK_EXAMPLES_DIR` if needed.
+
+## Architecture
 
 This layer is an adapter, not a place for business logic. It handles requests,
 validation, configuration, and serialization, then delegates the real work to `core`.
 If you deleted it, the engine would still work; you'd just lose the HTTP interface.
 
-**Contains:** the web app and its routes, request/response schemas, configuration,
-a container definition, and API-level tests.
-
 **Depends on:** `core`.
+
+## Tests
+
+```bash
+python -m pytest api/tests -q          # key-free (mock mode), via fastapi TestClient
+```
+
+The `@pytest.mark.api` smoke needs a real key; it loads the repo-root `.env` and is
+skipped if no key is configured. Note: `api/tests` deliberately has **no**
+`__init__.py` (unlike `core/tests` / `eval/tests`) so a combined
+`pytest core/tests api/tests eval/tests` run doesn't hit pytest's duplicate-`tests`-
+package import collision.

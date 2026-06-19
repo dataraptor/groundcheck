@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "groundcheck-api"
+version = "0.1.0"
+description = "Thin FastAPI HTTP adapter over the GroundCheck engine; serves the static app same-origin."
+requires-python = ">=3.11"
+dependencies = [
+    # The engine. Installed editable from ./core — `pip install -e ./core` first
+    # (the documented order below) satisfies this requirement from the local source,
+    # so pip never reaches for a PyPI release.
+    "groundcheck>=0.1",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+]
+
+[project.optional-dependencies]
+# httpx backs fastapi.testclient.TestClient (the no-key test seam).
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "api: needs a real LLM key — ANTHROPIC_API_KEY or Azure OpenAI creds (skipped without one)",
+]

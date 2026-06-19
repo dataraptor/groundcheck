@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+  textarea{font-family:inherit;}
+  button{font-family:inherit;}
+  ::selection{background:rgba(11,11,12,.12);}
+  .gc-bar{height:60px;}
+  .gc-sub{display:block;}
+  .gc-badge{display:inline-flex;}
+  .gc-stickytop{top:60px;}
+  @media (max-width:600px){
+    .gc-bar{height:52px;}
+    .gc-sub{display:none;}
+    .gc-badge{display:none;}
+    .gc-stickytop{top:52px;}
+  }
+  :root{
+    --fs-score:clamp(2.25rem,1.7rem + 2.6vw,3rem);
+    --fs-title:clamp(1.25rem,1.1rem + 0.7vw,1.6rem);
+    --fs-doc:clamp(1.05rem,1rem + 0.5vw,1.2rem);
+    --fs-body:clamp(0.95rem,0.92rem + 0.2vw,1rem);
+    --fs-meta:clamp(0.82rem,0.8rem + 0.1vw,0.88rem);
+  }
+</style>
+</helmet>
+<div style="{{ rootStyle }};min-height:100vh;background:var(--bg,#FFFFFF);color:var(--ink,#0B0B0C);font-variant-numeric:tabular-nums;">
+  <div aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">{{ liveMsg }}</div>
+
+  <header style="position:sticky;top:0;z-index:20;background:var(--bg,#FFFFFF);border-bottom:1px solid var(--line,#EAEAEC);-webkit-backdrop-filter:saturate(1.4) blur(8px);backdrop-filter:saturate(1.4) blur(8px);">
+    <div class="gc-bar" style="max-width:720px;margin:0 auto;padding:0 16px;display:flex;align-items:center;gap:11px;">
+      <span aria-hidden="true" style="flex:none;width:30px;height:30px;border-radius:8px;background:var(--ink,#0B0B0C);color:var(--bg,#FFFFFF);display:flex;align-items:center;justify-content:center;font-size:1.05rem;font-weight:600;letter-spacing:-0.02em;">g</span>
+      <div style="min-width:0;display:flex;flex-direction:column;">
+        <span style="font-size:1.0625rem;font-weight:600;letter-spacing:-0.01em;color:var(--ink,#0B0B0C);line-height:1.15;">groundcheck</span>
+        <span class="gc-sub" style="font-size:0.72rem;color:var(--ink3,#83878E);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">source-grounded faithfulness</span>
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+        <span class="gc-badge" style="align-items:center;height:24px;padding:0 9px;border-radius:999px;border:1px solid var(--line2,#D8D9DD);font-size:0.7rem;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:var(--ink3,#83878E);">demo</span>
+        <button onClick="{{ onToggleHeader }}" aria-label="About groundcheck" aria-expanded="{{ headerOpen }}" style="flex:none;width:34px;height:34px;border-radius:8px;background:{{ infoBtnBg }};border:1px solid var(--line2,#D8D9DD);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.92rem;font-weight:600;font-style:italic;color:var(--ink2,#54585F);font-family:Georgia,serif;" style-active="opacity:0.7;">i</button>
+      </div>
+    </div>
+    <sc-if value="{{ headerOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="border-top:1px solid var(--line,#EAEAEC);background:var(--bgsub,#F7F7F8);">
+        <div style="max-width:720px;margin:0 auto;padding:12px 16px 13px;font-size:var(--fs-meta,0.85rem);color:var(--ink2,#54585F);line-height:1.55;">{{ headerLine }}</div>
+      </div>
+    </sc-if>
+  </header>
+
+  <div style="max-width:720px;margin:0 auto;padding:0 16px 64px;">
+
+    <section style="padding:24px 0 8px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(248px,1fr));gap:16px;">
+        <div>
+          <label style="display:block;font-size:0.72rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink2,#54585F);margin-bottom:8px;">Source</label>
+          <textarea value="{{ source }}" onChange="{{ onSourceChange }}" rows="6" style="width:100%;background:var(--bgsub,#F7F7F8);border:1px solid var(--line2,#D8D9DD);border-radius:8px;padding:13px 14px;font-size:var(--fs-body,0.98rem);line-height:1.6;color:var(--ink,#0B0B0C);resize:vertical;outline:none;" style-focus="border:1px solid var(--ink,#0B0B0C);box-shadow:0 0 0 2px var(--bg,#fff),0 0 0 4px var(--ink,#0B0B0C);"></textarea>
+          <div style="margin-top:6px;font-size:var(--fs-meta,0.85rem);color:var(--ink3,#83878E);">~68 tokens</div>
+        </div>
+        <div>
+          <label style="display:block;font-size:0.72rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink2,#54585F);margin-bottom:8px;">Answer (candidate)</label>
+          <textarea value="{{ answer }}" onChange="{{ onAnswerChange }}" rows="6" style="width:100%;background:var(--bgsub,#F7F7F8);border:1px solid var(--line2,#D8D9DD);border-radius:8px;padding:13px 14px;font-size:var(--fs-body,0.98rem);line-height:1.6;color:var(--ink,#0B0B0C);resize:vertical;outline:none;" style-focus="border:1px solid var(--ink,#0B0B0C);box-shadow:0 0 0 2px var(--bg,#fff),0 0 0 4px var(--ink,#0B0B0C);"></textarea>
+          <div style="margin-top:6px;font-size:var(--fs-meta,0.85rem);color:var(--ink3,#83878E);">~64 tokens</div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:12px;margin:18px 0 14px;">
+        <span style="font-size:var(--fs-body,0.98rem);color:var(--ink2,#54585F);font-weight:500;">N</span>
+        <div style="display:flex;align-items:center;border:1px solid var(--line2,#D8D9DD);border-radius:8px;overflow:hidden;">
+          <button onClick="{{ onStepDown }}" aria-label="decrease runs" style="width:44px;height:44px;background:none;border:none;border-right:1px solid var(--line,#EAEAEC);cursor:pointer;font-size:1.25rem;color:var(--ink,#0B0B0C);line-height:1;">−</button>
+          <span style="min-width:42px;text-align:center;font-weight:500;font-size:var(--fs-body,0.98rem);color:var(--ink,#0B0B0C);">{{ nRuns }}</span>
+          <button onClick="{{ onStepUp }}" aria-label="increase runs" style="width:44px;height:44px;background:none;border:none;border-left:1px solid var(--line,#EAEAEC);cursor:pointer;font-size:1.25rem;color:var(--ink,#0B0B0C);line-height:1;">+</button>
+        </div>
+        <span style="font-size:var(--fs-meta,0.85rem);color:var(--ink3,#83878E);">majority vote</span>
+      </div>
+
+      <sc-if value="{{ isIdle }}" hint-placeholder-val="{{ true }}">
+        <button onClick="{{ onCheck }}" style="width:100%;height:52px;background:var(--ink,#0B0B0C);color:var(--bg,#FFFFFF);border:none;border-radius:8px;font-size:var(--fs-body,0.98rem);font-weight:500;cursor:pointer;letter-spacing:0.01em;" style-active="opacity:0.85;">Check faithfulness</button>
+      </sc-if>
+      <sc-if value="{{ isChecking }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:4px 0 2px;">
+          <div style="font-size:var(--fs-meta,0.85rem);color:var(--ink2,#54585F);margin-bottom:8px;">{{ progressLabel }}</div>
+          <div style="height:2px;width:100%;background:var(--line,#EAEAEC);border-radius:1px;overflow:hidden;">
+            <div style="height:2px;background:var(--ink,#0B0B0C);width:{{ progressPct }};transition:width 220ms ease-out;"></div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ onCheck }}" style="background:none;border:none;padding:6px 0;cursor:pointer;font-family:inherit;font-size:var(--fs-body,0.98rem);color:var(--ink2,#54585F);">Checked · <span style="text-decoration:underline;text-underline-offset:3px;">re-run</span></button>
+      </sc-if>
+
+      <div style="margin-top:12px;font-size:var(--fs-meta,0.85rem);color:var(--ink3,#83878E);line-height:1.5;">Each claim is grounded N times; the majority label wins. Judged against the source only.</div>
+    </section>
+
+    <sc-if value="{{ showResults }}" hint-placeholder-val="{{ false }}">
+      <div>
+        <div class="gc-stickytop" style="position:sticky;z-index:5;background:var(--bg,#FFFFFF);border-bottom:1px solid var(--line,#EAEAEC);padding:14px 0 13px;margin-top:8px;">
+          <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;min-height:1.1em;">
+            <span style="font-size:var(--fs-score,2.6rem);font-weight:600;line-height:1;letter-spacing:-0.02em;color:var(--ink,#0B0B0C);">{{ scoreText }}</span>
+            <span style="font-size:var(--fs-body,0.98rem);color:var(--ink2,#54585F);">{{ countsLine }}</span>
+          </div>
+          <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;margin-top:11px;background:var(--bgsub,#F7F7F8);">
+            <div style="width:{{ meterSup }};background:{{ meterSupColor }};transition:width 240ms ease-out;"></div>
+            <div style="width:{{ meterNei }};background:{{ meterNeiColor }};transition:width 240ms ease-out;"></div>
+            <div style="width:{{ meterCon }};background:{{ meterConColor }};transition:width 240ms ease-out;"></div>
+          </div>
+        </div>
+
+        <section style="padding:26px 0 4px;">
+          <p style="font-size:var(--fs-doc,1.12rem);line-height:1.7;color:var(--ink,#0B0B0C);margin:0;font-weight:400;">
+            <sc-for list="{{ sentences }}" as="s" hint-placeholder-count="8"><span role="button" tabindex="0" aria-label="{{ s.aria }}" style="{{ s.style }}" onClick="{{ s.onSelect }}" onKeyDown="{{ s.onKey }}">{{ s.text }}</span><span> </span></sc-for>
+          </p>
+
+          <sc-if value="{{ hasSelection }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:16px;padding:16px 16px 18px;background:var(--bgsub,#F7F7F8);border-radius:8px;">
+              <div style="font-size:var(--fs-body,0.98rem);font-weight:500;color:{{ sel.ink }};margin-bottom:10px;">{{ sel.word }}</div>
+              <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:var(--fs-meta,0.85rem);color:var(--ink2,#54585F);margin-bottom:12px;">
+                <span>votes {{ sel.votes }}</span>
+                <span>confidence {{ sel.confLabel }}</span>
+              </div>
+              <sc-if value="{{ sel.hasSpan }}" hint-placeholder-val="{{ false }}">
+                <div style="border-left:2px solid var(--line2,#D8D9DD);padding-left:13px;color:var(--ink2,#54585F);font-size:var(--fs-body,0.98rem);line-height:1.55;">{{ sel.span }}</div>
+              </sc-if>
+              <sc-if value="{{ sel.noSpan }}" hint-placeholder-val="{{ false }}">
+                <div style="border-left:2px solid var(--line2,#D8D9DD);padding-left:13px;color:var(--ink3,#83878E);font-size:var(--fs-body,0.98rem);line-height:1.55;">no supporting span — source is silent on this</div>
+              </sc-if>
+              <div style="margin-top:12px;font-size:var(--fs-meta,0.85rem);color:var(--ink2,#54585F);line-height:1.5;"><span style="color:var(--ink3,#83878E);">rationale&nbsp;&nbsp;</span>{{ sel.rationale }}</div>
+            </div>
+          </sc-if>
+
+          <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:20px;font-size:var(--fs-meta,0.85rem);color:var(--ink3,#83878E);">
+            <span style="display:inline-flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:3px;display:inline-block;background:{{ legSup }};border:1px solid var(--line2,#D8D9DD);"></span>grounded</span>
+            <span style="display:inline-flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:3px;display:inline-block;background:{{ legNei }};border:1px solid var(--line2,#D8D9DD);"></span>not in source</span>
+            <span style="display:inline-flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:3px;display:inline-block;background:{{ legCon }};border:1px solid var(--line2,#D8D9DD);"></span>contradicted</span>
+          </div>
+        </section>
+
+        <section style="padding:18px 0 0;">
+          <div style="font-size:0.72rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink2,#54585F);padding-bottom:6px;">Claims</div>
+          <sc-for list="{{ listClaims }}" as="c" hint-placeholder-count="8">
+            <div style="{{ c.rowStyle }}">
+              <button onClick="{{ c.onToggle }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px 12px 14px 13px;background:none;border:none;text-align:left;cursor:pointer;font-family:inherit;">
+                <span style="flex:1;min-width:0;font-size:var(--fs-body,0.98rem);font-weight:500;color:var(--ink,#0B0B0C);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.claim }}</span>
+                <span style="font-size:var(--fs-meta,0.85rem);color:var(--ink2,#54585F);white-space:nowrap;">{{ c.word }}</span>
+                <span style="font-size:0.8rem;color:var(--ink3,#83878E);width:14px;text-align:center;">{{ c.chevron }}</span>
+              </button>
+              <sc-if value="{{ c.expanded }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:0 12px 18px 13px;">
+                  <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:var(--fs-meta,0.85rem);color:var(--ink2,#54585F);margin-bottom:12px;">
+                    <span>votes {{ c.votes }}</span>
+                    <span>confidence {{ c.confLabel }}</span>
+                  </div>
+                  <sc-if value="{{ c.hasSpan }}" hint-placeholder-val="{{ false }}">
+                    <div style="border-left:2px solid var(--line2,#D8D9DD);padding-left:13px;color:var(--ink2,#54585F);font-size:var(--fs-body,0.98rem);line-height:1.55;">{{ c.span }}</div>
+                  </sc-if>
+                  <sc-if value="{{ c.noSpan }}" hint-placeholder-val="{{ false }}">
+                    <div style="border-left:2px solid var(--line2,#D8D9DD);padding-left:13px;color:var(--ink3,#83878E);font-size:var(--fs-body,0.98rem);line-height:1.55;">no supporting span — source is silent on this</div>
+                  </sc-if>
+                  <div style="margin-top:12px;font-size:var(--fs-meta,0.85rem);color:var(--ink2,#54585F);line-height:1.5;"><span style="color:var(--ink3,#83878E);">rationale&nbsp;&nbsp;</span>{{ c.rationale }}</div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </section>
+
+        <footer style="margin-top:28px;padding-top:16px;border-top:1px solid var(--line,#EAEAEC);font-size:var(--fs-meta,0.85rem);color:var(--ink3,#83878E);line-height:1.7;">
+          <div>{{ footerLine }}</div>
+          <div>cache n/a (source &lt; 4096 tok — expected)</div>
+          <div>demo, not a real service</div>
+        </footer>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:440,&quot;height&quot;:920},&quot;dark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;autoCheck&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;revealSpeed&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;Calm&quot;,&quot;options&quot;:[&quot;Calm&quot;,&quot;Brisk&quot;,&quot;Instant&quot;],&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.SRC = "High blood pressure, also called hypertension, usually has no symptoms. A reading of 130/80 mm Hg or higher is considered high. Over time, high blood pressure raises the risk of heart attack, stroke, and kidney disease. Lifestyle changes such as reducing salt, exercising regularly, and maintaining a healthy weight can help lower blood pressure. Some people also need medicine to keep their blood pressure under control.";
+    this.ANS = "Hypertension usually causes no symptoms. Many people don't know they have it. A reading of 130/80 mm Hg or higher is considered high blood pressure. It increases the risk of heart attack, stroke, and kidney disease. Cutting salt lowers blood pressure by exactly 25% in every patient. Hypertension is the leading cause of death worldwide. Doctors recommend regular exercise and maintaining a healthy weight. Some patients need medication.";
+    this.claims = [
+      { claim:"Hypertension usually causes no symptoms.", label:"SUPPORTED", span:"High blood pressure, also called hypertension, usually has no symptoms.", rationale:"The source states hypertension usually has no symptoms.", votes:"3 · 0", confidence:1.0 },
+      { claim:"Many people don't know they have it.", label:"NOT_ENOUGH_INFO", span:"", rationale:"The source is silent on awareness of the condition.", votes:"2 · 1", confidence:0.67 },
+      { claim:"A reading of 130/80 mm Hg or higher is considered high blood pressure.", label:"SUPPORTED", span:"A reading of 130/80 mm Hg or higher is considered high.", rationale:"Stated verbatim in the source.", votes:"3 · 0", confidence:1.0 },
+      { claim:"It increases the risk of heart attack, stroke, and kidney disease.", label:"SUPPORTED", span:"Over time, high blood pressure raises the risk of heart attack, stroke, and kidney disease.", rationale:"The source lists these same risks.", votes:"3 · 0", confidence:1.0 },
+      { claim:"Cutting salt lowers blood pressure by exactly 25% in every patient.", label:"NOT_ENOUGH_INFO", span:"", rationale:"The source gives no magnitude for the effect of reducing salt.", votes:"2 · 1", confidence:0.67 },
+      { claim:"Hypertension is the leading cause of death worldwide.", label:"NOT_ENOUGH_INFO", span:"", rationale:"The source is silent on mortality ranking or prevalence.", votes:"3 · 0", confidence:1.0 },
+      { claim:"Doctors recommend regular exercise and maintaining a healthy weight.", label:"SUPPORTED", span:"Lifestyle changes such as reducing salt, exercising regularly, and maintaining a healthy weight can help lower blood pressure.", rationale:"The source recommends exercise and a healthy weight.", votes:"3 · 0", confidence:1.0 },
+      { claim:"Some patients need medication.", label:"SUPPORTED", span:"Some people also need medicine to keep their blood pressure under control.", rationale:"The source notes some people also need medicine.", votes:"3 · 0", confidence:1.0 }
+    ];
+    this.resolveOrder = [0,1,2,3,6,7,4,5];
+    this.timers = [];
+    this.raf = null;
+    this.state = {
+      phase:"idle", nRuns:3, resolved:[], progress:0, scoreDisplay:0,
+      selectedSentence:null, expandedClaims:{}, headerOpen:false,
+      source:this.SRC, answer:this.ANS
+    };
+  }
+
+  componentDidMount() {
+    if (this.props.autoCheck) this.timers.push(setTimeout(() => this.runCheck(), 650));
+  }
+  componentWillUnmount() { this.clearTimers(); }
+  clearTimers() {
+    (this.timers || []).forEach(clearTimeout);
+    this.timers = [];
+    if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; }
+  }
+
+  palette() {
+    const dark = !!this.props.dark;
+    if (dark) return {
+      SUPPORTED:{ fill:"rgba(46,160,80,.18)", ink:"#5BD08A", rule:"#5BD08A", meter:"#3FB068" },
+      NOT_ENOUGH_INFO:{ fill:"rgba(176,124,0,.24)", ink:"#E0A93A", rule:"#E0A93A", meter:"#C9962E" },
+      CONTRADICTED:{ fill:"rgba(200,60,48,.24)", ink:"#F07A70", rule:"#F07A70", meter:"#D85B4E" }
+    };
+    return {
+      SUPPORTED:{ fill:"#E7F3EC", ink:"#137333", rule:"#137333", meter:"#2EA050" },
+      NOT_ENOUGH_INFO:{ fill:"#FBF0DA", ink:"#8A5A00", rule:"#8A5A00", meter:"#C68A14" },
+      CONTRADICTED:{ fill:"#FBE7E7", ink:"#B42318", rule:"#B42318", meter:"#C5402F" }
+    };
+  }
+
+  stepMs() {
+    const s = this.props.revealSpeed || "Calm";
+    if (s === "Brisk") return 260;
+    return 480;
+  }
+  instant() {
+    if ((this.props.revealSpeed || "Calm") === "Instant") return true;
+    return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+
+  runCheck = () => {
+    if (this.state.phase === "checking") return;
+    this.clearTimers();
+    const order = this.resolveOrder;
+    this.setState({ phase:"checking", resolved:[], progress:0, scoreDisplay:0, selectedSentence:null, expandedClaims:{} });
+    if (this.instant()) {
+      this.setState({ resolved:order.slice(), progress:order.length, phase:"done" });
+      return;
+    }
+    let k = 0;
+    const delay = this.stepMs();
+    const tick = () => {
+      k++;
+      this.setState({ resolved: order.slice(0, k), progress: k });
+      if (k < order.length) this.timers.push(setTimeout(tick, delay));
+      else this.timers.push(setTimeout(() => this.finish(), 360));
+    };
+    this.timers.push(setTimeout(tick, 480));
+  };
+
+  finish() { this.setState({ phase:"done" }); }
+
+  handleSelect(i) { this.setState(s => ({ selectedSentence: s.selectedSentence === i ? null : i })); }
+  handleToggle(i) { this.setState(s => { const ex = Object.assign({}, s.expandedClaims); ex[i] = !ex[i]; return { expandedClaims: ex }; }); }
+
+  renderVals() {
+    const V = this.palette();
+    const claims = this.claims;
+    const st = this.state;
+    const phase = st.phase;
+    const resolvedSet = st.resolved;
+    const isResolved = (i) => resolvedSet.indexOf(i) !== -1;
+    const expandedOf = (i) => !!st.expandedClaims[i] || st.selectedSentence === i;
+
+    const nClaims = claims.length;
+    const nSup = claims.filter(c => c.label === "SUPPORTED").length;
+    const nNei = claims.filter(c => c.label === "NOT_ENOUGH_INFO").length;
+    const nCon = claims.filter(c => c.label === "CONTRADICTED").length;
+    const nLow = claims.filter(c => c.confidence < 1.0).length;
+
+    const sentences = claims.map((c, i) => {
+      const v = V[c.label];
+      const done = isResolved(i);
+      const selected = st.selectedSentence === i;
+      const review = c.confidence < 1.0;
+      let style = "display:inline;padding:3px 5px;border-radius:3px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background-color 200ms ease-out,color 200ms ease-out;";
+      if (done) {
+        style += "background:" + v.fill + ";color:" + v.ink + ";";
+        if (review) style += "text-decoration:underline dotted " + v.ink + ";text-underline-offset:4px;";
+      } else {
+        style += "background:transparent;color:var(--ink,#0B0B0C);";
+      }
+      if (selected) style += "box-shadow:inset 0 -2px 0 var(--ink,#0B0B0C);";
+      return {
+        idx: i, text: c.claim, style,
+        aria: (done ? v.word + ": " : "") + c.claim + (review && done ? ", confidence " + c.confidence.toFixed(2) + ", review" : ""),
+        onSelect: () => this.handleSelect(i),
+        onKey: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.handleSelect(i); } }
+      };
+    });
+
+    const detailOf = (i) => {
+      if (i == null) return null;
+      const c = claims[i];
+      const v = V[c.label];
+      const review = c.confidence < 1.0;
+      return {
+        word: v.word, ink: v.ink, votes: c.votes,
+        confLabel: c.confidence.toFixed(2) + (review ? " · review" : ""),
+        hasSpan: !!c.span, noSpan: !c.span, span: c.span, rationale: c.rationale
+      };
+    };
+
+    // claims list in document order, only the resolved ones (streaming append)
+    const listClaims = claims.map((c, i) => i)
+      .filter(i => (phase === "idle" ? false : isResolved(i)))
+      .map((i) => {
+        const c = claims[i];
+        const v = V[c.label];
+        const review = c.confidence < 1.0;
+        const rule = "border-left:3px " + (review ? "dotted" : "solid") + " " + v.rule + ";";
+        return {
+          idx: i, claim: c.claim, word: v.word,
+          chevron: expandedOf(i) ? "\u2303" : "\u2304",
+          expanded: expandedOf(i),
+          rowStyle: "border-top:1px solid var(--line,#EAEAEC);" + rule,
+          votes: c.votes,
+          confLabel: c.confidence.toFixed(2) + (review ? " · review" : ""),
+          hasSpan: !!c.span, noSpan: !c.span, span: c.span, rationale: c.rationale,
+          onToggle: () => this.handleToggle(i)
+        };
+      });
+
+    // meter from resolved claims (grows during checking)
+    const rSup = resolvedSet.filter(i => claims[i].label === "SUPPORTED").length;
+    const rNei = resolvedSet.filter(i => claims[i].label === "NOT_ENOUGH_INFO").length;
+    const rCon = resolvedSet.filter(i => claims[i].label === "CONTRADICTED").length;
+    const pct = (n) => (n / nClaims * 100) + "%";
+
+    const isDone = phase === "done";
+    const isChecking = phase === "checking";
+    const isIdle = phase === "idle";
+
+    let countsLine = "";
+    if (isDone) countsLine = nSup + " of " + nClaims + " grounded" + (nLow ? " · " + nLow + " to review" : "");
+    else if (isChecking) countsLine = st.progress + " of " + nClaims + " checked";
+
+    let liveMsg = "";
+    if (isDone) liveMsg = "Faithfulness " + st.scoreDisplay + " percent, " + nSup + " of " + nClaims + " claims grounded, " + nNei + " not in source.";
+    else if (isChecking) liveMsg = "grounding " + st.progress + " of " + nClaims;
+
+    const frac = isDone ? 1 : (st.progress / nClaims);
+    const cost = (0.014 * frac).toFixed(3);
+    const lat = (3.8 * frac).toFixed(1);
+
+    const rootStyle = this.props.dark
+      ? "--bg:#0C0D0F;--bgsub:#15171A;--ink:#F2F3F5;--ink2:#A8ACB3;--ink3:#7E828A;--line:#22242A;--line2:#2E3137"
+      : "--bg:#FFFFFF;--bgsub:#F7F7F8;--ink:#0B0B0C;--ink2:#54585F;--ink3:#83878E;--line:#EAEAEC;--line2:#D8D9DD";
+
+    const headerLine = "Judges faithfulness to the provided source — not truth in the world. Each claim is grounded N times; the majority label wins. prompt v3 · sonnet-4-6 · opus-4-8. Demo, not a real service.";
+    const infoBtnBg = st.headerOpen ? "var(--bgsub,#F7F7F8)" : "transparent";
+
+    return {
+      rootStyle, headerLine, headerOpen: st.headerOpen, infoBtnBg, onToggleHeader: () => this.setState(s => ({ headerOpen: !s.headerOpen })),
+      source: st.source, answer: st.answer,
+      onSourceChange: (e) => this.setState({ source: e.target.value }),
+      onAnswerChange: (e) => this.setState({ answer: e.target.value }),
+      nRuns: st.nRuns,
+      onStepDown: () => this.setState(s => ({ nRuns: Math.max(1, s.nRuns - 1) })),
+      onStepUp: () => this.setState(s => ({ nRuns: Math.min(5, s.nRuns + 1) })),
+      onCheck: this.runCheck,
+      isIdle, isChecking, isDone,
+      showResults: !isIdle,
+      progressLabel: "grounding " + st.progress + " of " + nClaims + "\u2026",
+      progressPct: (st.progress / nClaims * 100) + "%",
+      scoreText: isDone ? Math.floor(nSup / nClaims * 100) + "%" : "",
+      countsLine, liveMsg,
+      meterSup: pct(rSup), meterNei: pct(rNei), meterCon: pct(rCon),
+      meterSupColor: V.SUPPORTED.meter, meterNeiColor: V.NOT_ENOUGH_INFO.meter, meterConColor: V.CONTRADICTED.meter,
+      sentences, listClaims,
+      hasSelection: st.selectedSentence != null,
+      sel: detailOf(st.selectedSentence) || { word:"", ink:"var(--ink2,#54585F)", votes:"", confLabel:"", hasSpan:false, noSpan:false, span:"", rationale:"" },
+      legSup: V.SUPPORTED.fill, legNei: V.NOT_ENOUGH_INFO.fill, legCon: V.CONTRADICTED.fill,
+      footerLine: "$" + cost + " cost · " + lat + " s · N=" + st.nRuns + " · prompt v3 · opus-4-8"
+    };
+  }
+}
+</script>
+</body>
+</html>

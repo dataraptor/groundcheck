@@ -6,6 +6,7 @@ The LLM client, decompose/ground/pipeline steps, and CLI arrive in later splits 
 lazy-import their network dependencies inside functions.
 """
 
+from .decompose import DecomposeOutcome, decompose
 from .models import (
     ClaimResult,
     DecomposedClaim,
@@ -24,4 +25,6 @@ __all__ = [
     "ClaimResult",
     "FaithfulnessReport",
     "PROMPT_VERSION",
+    "decompose",
+    "DecomposeOutcome",
 ]

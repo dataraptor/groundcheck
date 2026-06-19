@@ -25,5 +25,5 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
-    "api: needs ANTHROPIC_API_KEY (skipped without a key)",
+    "api: needs a real LLM key — ANTHROPIC_API_KEY or Azure OpenAI creds (skipped without one)",
 ]

@@ -359,10 +359,26 @@ class MockProvider:
         responses: Optional[dict[str, Any] | Callable[[type[BaseModel], str], Any]] = None,
         *,
         refuse_when: Optional[Callable[[str], bool]] = None,
+        seed_worked_example: Optional[bool] = None,
     ) -> None:
         self._callable = responses if callable(responses) else None
         self._responses: dict[str, Any] = {} if self._callable else dict(responses or {})
         self._refuse_when = refuse_when
+        # Auto-seed the §5 worked-example fixtures into a bare MockProvider so the
+        # no-key demo (`cli check --example`) and tests reproduce the canonical 62%
+        # run. Default: seed only when the caller passed no explicit `responses`
+        # (so tests that supply their own dict/callable keep full control).
+        if seed_worked_example is None:
+            seed_worked_example = responses is None
+        if seed_worked_example:
+            self._seed_worked_example()
+
+    def _seed_worked_example(self) -> None:
+        """Register the §5 worked-example responses (decomposition here; Split 04
+        adds verdicts). Imported lazily to avoid a module-load import cycle."""
+        from . import worked_example
+
+        self.register(worked_example.WORKED_EXAMPLE_KEY, worked_example.WORKED_EXAMPLE_DECOMPOSITION)
 
     def register(self, key: str, value: Any) -> None:
         """Register a canned response (or :data:`REFUSAL`) for inputs containing ``key``."""
@@ -372,7 +388,14 @@ class MockProvider:
         if self._callable is not None:
             return self._callable(output_model, text)
         for key, value in self._responses.items():
-            if key in text:
+            if key not in text:
+                continue
+            # REFUSAL forces a refusal for any matching request; a typed response
+            # only answers a request for *its own* output_model, so a registered
+            # Decomposition can't satisfy a GroundingVerdict request even when the
+            # claim text overlaps the answer (Split 04). On a type mismatch, keep
+            # scanning later keys.
+            if value is REFUSAL or isinstance(value, output_model):
                 return value
         return None
 

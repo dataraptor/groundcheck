@@ -1,0 +1,30 @@
+# Keep the build context small and secrets/artifacts out of the image.
+
+# Secrets — NEVER bake the real key into an image layer.
+.env
+
+# VCS & local tooling
+.git
+.gitignore
+.gitattributes
+.pytest_cache
+**/.pytest_cache
+**/__pycache__
+*.py[cod]
+**/*.egg-info
+
+# Scratch, planning, and eval run artifacts (not needed at runtime)
+tmp/
+eval/runs/*
+!eval/runs/.gitkeep
+
+# Test layers are not needed to serve the app (engine + api + static app only)
+e2e/
+core/tests/
+api/tests/
+eval/tests/
+
+# Docs images / build outputs
+docs/*.png
+build/
+dist/

@@ -1,0 +1,27 @@
+# GroundCheck — one-command local deploy.
+#
+#   docker compose up --build      # mock mode (no key) → http://localhost:8080/
+#
+# The default runs the deterministic 62% money demo with no API key. To drive a
+# live model instead, set GROUNDCHECK_LLM and supply credentials — uncomment the
+# env_file line below (reads your gitignored .env) and set GROUNDCHECK_LLM to
+# `openai` (Azure) or `anthropic`, e.g.:
+#
+#   GROUNDCHECK_LLM=openai docker compose up --build
+
+services:
+  groundcheck:
+    build: .
+    image: groundcheck:local
+    container_name: groundcheck
+    ports:
+      # host 8080 → container 8000 (host 8000 is often taken; change freely).
+      - "8080:8000"
+    environment:
+      # Defaults to mock; override from your shell to use a live provider.
+      GROUNDCHECK_LLM: ${GROUNDCHECK_LLM:-mock}
+    # Uncomment to pass live-model credentials from your local .env into the
+    # container (only needed when GROUNDCHECK_LLM is openai/anthropic):
+    # env_file:
+    #   - .env
+    restart: unless-stopped

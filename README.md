@@ -92,6 +92,9 @@ GROUNDCHECK_LLM=mock python -m groundcheck.cli check --example core/examples/exa
 # 3. the no-key money demo — web (same 62%, in the browser)
 ./scripts/dev.sh           # http://127.0.0.1:8000/  → click "Check faithfulness"
 
+# 3b. …or run the whole stack in Docker — no local Python needed, mock by default
+docker compose up --build  # http://localhost:8080/  → click "Check faithfulness"
+
 # 4. the real path — needs a key. Either ANTHROPIC_API_KEY, or Azure OpenAI creds
 #    (this repo's .env). Then drop GROUNDCHECK_LLM=mock:
 python -m groundcheck.cli check --source-file s.txt --answer-file a.txt -n 3
@@ -106,6 +109,15 @@ python -m eval.run --tier all          # n=3, R=3 — the reported numbers
 The report carries the per-claim verdicts, votes, confidence, spans, rationales, the
 `faithfulness_score` (`None` when there are 0 checkable claims → *"N/A"*, never a
 misleading 100%), counts, and honest `cost_usd` / `latency_s`.
+
+**Docker.** `docker compose up --build` builds a slim non-root image (engine + API +
+static app) and serves it at <http://localhost:8080/> in **mock mode** — the 62% demo
+with no key. To drive a live model instead, set `GROUNDCHECK_LLM` (`openai` for Azure,
+or `anthropic`) and pass credentials by uncommenting the `env_file: [.env]` line in
+[`docker-compose.yml`](docker-compose.yml), e.g. `GROUNDCHECK_LLM=openai docker compose
+up --build`. The browser UI loads React/Babel from unpkg and the Inter font from Google
+Fonts at runtime, so rendering the page needs internet; the engine and API are fully
+self-contained.
 
 ---
 

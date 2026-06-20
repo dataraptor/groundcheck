@@ -99,6 +99,12 @@
       <sc-if value="{{ isDone }}" hint-placeholder-val="{{ false }}">
         <button onClick="{{ onCheck }}" style="background:none;border:none;padding:6px 0;cursor:pointer;font-family:inherit;font-size:var(--fs-body,0.98rem);color:var(--ink2,#54585F);">Checked · <span style="text-decoration:underline;text-underline-offset:3px;">re-run</span></button>
       </sc-if>
+      <sc-if value="{{ isError }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:13px 14px;background:var(--bgsub,#F7F7F8);border:1px solid var(--line2,#D8D9DD);border-radius:8px;">
+          <div style="font-size:var(--fs-body,0.98rem);color:var(--ink,#0B0B0C);line-height:1.5;margin-bottom:11px;">{{ errorMsg }}</div>
+          <button onClick="{{ onCheck }}" style="height:40px;padding:0 16px;background:var(--ink,#0B0B0C);color:var(--bg,#FFFFFF);border:none;border-radius:8px;font-size:var(--fs-body,0.98rem);font-weight:500;cursor:pointer;" style-active="opacity:0.85;">Try again</button>
+        </div>
+      </sc-if>
 
       <div style="margin-top:12px;font-size:var(--fs-meta,0.85rem);color:var(--ink3,#83878E);line-height:1.5;">Each claim is grounded N times; the majority label wins. Judged against the source only.</div>
     </section>
@@ -191,22 +197,18 @@ class Component extends DCLogic {
     super(props);
     this.SRC = "High blood pressure, also called hypertension, usually has no symptoms. A reading of 130/80 mm Hg or higher is considered high. Over time, high blood pressure raises the risk of heart attack, stroke, and kidney disease. Lifestyle changes such as reducing salt, exercising regularly, and maintaining a healthy weight can help lower blood pressure. Some people also need medicine to keep their blood pressure under control.";
     this.ANS = "Hypertension usually causes no symptoms. Many people don't know they have it. A reading of 130/80 mm Hg or higher is considered high blood pressure. It increases the risk of heart attack, stroke, and kidney disease. Cutting salt lowers blood pressure by exactly 25% in every patient. Hypertension is the leading cause of death worldwide. Doctors recommend regular exercise and maintaining a healthy weight. Some patients need medication.";
-    this.claims = [
-      { claim:"Hypertension usually causes no symptoms.", label:"SUPPORTED", span:"High blood pressure, also called hypertension, usually has no symptoms.", rationale:"The source states hypertension usually has no symptoms.", votes:"3 · 0", confidence:1.0 },
-      { claim:"Many people don't know they have it.", label:"NOT_ENOUGH_INFO", span:"", rationale:"The source is silent on awareness of the condition.", votes:"2 · 1", confidence:0.67 },
-      { claim:"A reading of 130/80 mm Hg or higher is considered high blood pressure.", label:"SUPPORTED", span:"A reading of 130/80 mm Hg or higher is considered high.", rationale:"Stated verbatim in the source.", votes:"3 · 0", confidence:1.0 },
-      { claim:"It increases the risk of heart attack, stroke, and kidney disease.", label:"SUPPORTED", span:"Over time, high blood pressure raises the risk of heart attack, stroke, and kidney disease.", rationale:"The source lists these same risks.", votes:"3 · 0", confidence:1.0 },
-      { claim:"Cutting salt lowers blood pressure by exactly 25% in every patient.", label:"NOT_ENOUGH_INFO", span:"", rationale:"The source gives no magnitude for the effect of reducing salt.", votes:"2 · 1", confidence:0.67 },
-      { claim:"Hypertension is the leading cause of death worldwide.", label:"NOT_ENOUGH_INFO", span:"", rationale:"The source is silent on mortality ranking or prevalence.", votes:"3 · 0", confidence:1.0 },
-      { claim:"Doctors recommend regular exercise and maintaining a healthy weight.", label:"SUPPORTED", span:"Lifestyle changes such as reducing salt, exercising regularly, and maintaining a healthy weight can help lower blood pressure.", rationale:"The source recommends exercise and a healthy weight.", votes:"3 · 0", confidence:1.0 },
-      { claim:"Some patients need medication.", label:"SUPPORTED", span:"Some people also need medicine to keep their blood pressure under control.", rationale:"The source notes some people also need medicine.", votes:"3 · 0", confidence:1.0 }
-    ];
-    this.resolveOrder = [0,1,2,3,6,7,4,5];
+    // Results now arrive from the live API (POST /check) and are mapped onto this
+    // shape in runCheck(). SRC/ANS above are kept ONLY as the initial textarea
+    // prefill, not as the source of truth for results (Split 09). claims/report/
+    // resolveOrder start empty and are populated from the response.
+    this.claims = [];
+    this.report = null;
+    this.resolveOrder = [];
     this.timers = [];
     this.raf = null;
     this.state = {
       phase:"idle", nRuns:3, resolved:[], progress:0, scoreDisplay:0,
-      selectedSentence:null, expandedClaims:{}, headerOpen:false,
+      selectedSentence:null, expandedClaims:{}, headerOpen:false, error:null,
       source:this.SRC, answer:this.ANS
     };
   }
@@ -245,13 +247,76 @@ class Component extends DCLogic {
     return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }
 
-  runCheck = () => {
+  // Same-origin is the production path: FastAPI (Split 08) serves this page under
+  // /app, so fetch('/check') hits the host that served the page — no CORS needed.
+  // window.GROUNDCHECK_API lets a dev override the base when the page is opened
+  // off-origin (e.g. a different localhost port).
+  apiBase() {
+    return (typeof window !== "undefined" && window.GROUNDCHECK_API) || "";
+  }
+
+  // Map an engine FaithfulnessReport (spec §7) onto the component's existing
+  // per-claim shape read by renderVals(). The only transform is votes-dict -> the
+  // "{winner} · {runnerUp}" string the markup already shows; everything else is a
+  // passthrough (supporting_span -> span, plus refused for Split 10).
+  mapReport(report) {
+    const n = report.n_runs;
+    return (report.claims || []).map((c) => {
+      const winner = (c.votes && c.votes[c.label]) || 0;
+      const runnerUp = n - winner;
+      return {
+        claim: c.claim,
+        label: c.label,
+        span: c.supporting_span || "",
+        rationale: c.rationale,
+        confidence: c.confidence,
+        refused: c.refused,
+        votes: winner + " · " + runnerUp
+      };
+    });
+  }
+
+  // Fetch the real report FIRST, then play the existing reveal animation over it.
+  // The animation is purely cosmetic over already-fetched data (no streaming/SSE).
+  runCheck = async () => {
     if (this.state.phase === "checking") return;
     this.clearTimers();
+    this.report = null;
+    this.claims = [];
+    this.resolveOrder = [];
+    this.setState({ phase:"checking", resolved:[], progress:0, scoreDisplay:0, selectedSentence:null, expandedClaims:{}, error:null });
+
+    let report;
+    try {
+      const res = await fetch(this.apiBase() + "/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source: this.state.source, answer: this.state.answer, n: this.state.nRuns })
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        const code = (body && body.code) || "http_error";
+        const message = (body && (body.error || body.detail)) || ("The check failed (HTTP " + res.status + ").");
+        this.setState({ phase:"error", error:{ code, message } });
+        return;
+      }
+      report = body;
+    } catch (err) {
+      // network failure / API down — never leave the page stuck on "checking".
+      this.setState({ phase:"error", error:{ code:"network_error", message:"Could not reach the API. Is it running?" } });
+      return;
+    }
+
+    // Real data in hand: map it, store it, then animate over it.
+    const mapped = this.mapReport(report);
+    this.claims = mapped;
+    this.report = report;
+    this.resolveOrder = mapped.map((_, i) => i);
     const order = this.resolveOrder;
-    this.setState({ phase:"checking", resolved:[], progress:0, scoreDisplay:0, selectedSentence:null, expandedClaims:{} });
-    if (this.instant()) {
-      this.setState({ resolved:order.slice(), progress:order.length, phase:"done" });
+    const finalScore = (report.faithfulness_score == null) ? 0 : Math.floor(report.faithfulness_score * 100);
+
+    if (this.instant() || order.length === 0) {
+      this.setState({ resolved:order.slice(), progress:order.length, scoreDisplay:finalScore, phase:"done" });
       return;
     }
     let k = 0;
@@ -260,12 +325,12 @@ class Component extends DCLogic {
       k++;
       this.setState({ resolved: order.slice(0, k), progress: k });
       if (k < order.length) this.timers.push(setTimeout(tick, delay));
-      else this.timers.push(setTimeout(() => this.finish(), 360));
+      else this.timers.push(setTimeout(() => this.finish(finalScore), 360));
     };
     this.timers.push(setTimeout(tick, 480));
   };
 
-  finish() { this.setState({ phase:"done" }); }
+  finish(finalScore) { this.setState({ phase:"done", scoreDisplay: finalScore }); }
 
   handleSelect(i) { this.setState(s => ({ selectedSentence: s.selectedSentence === i ? null : i })); }
   handleToggle(i) { this.setState(s => { const ex = Object.assign({}, s.expandedClaims); ex[i] = !ex[i]; return { expandedClaims: ex }; }); }
@@ -279,11 +344,15 @@ class Component extends DCLogic {
     const isResolved = (i) => resolvedSet.indexOf(i) !== -1;
     const expandedOf = (i) => !!st.expandedClaims[i] || st.selectedSentence === i;
 
+    // Headline counts come from the engine's report when present (the authoritative
+    // numbers); fall back to claim-derived during the brief pre-fetch window. Since
+    // claims is mapped 1:1 from report.claims, the two agree once the report lands.
+    const report = this.report;
     const nClaims = claims.length;
-    const nSup = claims.filter(c => c.label === "SUPPORTED").length;
-    const nNei = claims.filter(c => c.label === "NOT_ENOUGH_INFO").length;
-    const nCon = claims.filter(c => c.label === "CONTRADICTED").length;
-    const nLow = claims.filter(c => c.confidence < 1.0).length;
+    const nSup = report ? report.n_supported : claims.filter(c => c.label === "SUPPORTED").length;
+    const nNei = report ? report.n_not_enough_info : claims.filter(c => c.label === "NOT_ENOUGH_INFO").length;
+    const nCon = report ? report.n_contradicted : claims.filter(c => c.label === "CONTRADICTED").length;
+    const nLow = report ? report.n_low_confidence : claims.filter(c => c.confidence < 1.0).length;
 
     const sentences = claims.map((c, i) => {
       const v = V[c.label];
@@ -342,11 +411,22 @@ class Component extends DCLogic {
     const rSup = resolvedSet.filter(i => claims[i].label === "SUPPORTED").length;
     const rNei = resolvedSet.filter(i => claims[i].label === "NOT_ENOUGH_INFO").length;
     const rCon = resolvedSet.filter(i => claims[i].label === "CONTRADICTED").length;
-    const pct = (n) => (n / nClaims * 100) + "%";
+    const pct = (n) => (nClaims ? (n / nClaims * 100) : 0) + "%";
 
     const isDone = phase === "done";
     const isChecking = phase === "checking";
     const isIdle = phase === "idle";
+    const isError = phase === "error";
+
+    // Score is driven by the engine's faithfulness_score (0..1 or null), NOT
+    // recomputed from claims — so an empty answer (0 claims -> null) shows "N/A",
+    // never a misleading 100% or NaN (spec §19-1). Math.floor, not Math.round, so
+    // 5/8 = 0.625 prints the canonical "62%" (Math.round(62.5) would give 63).
+    let scoreText = "";
+    if (isDone) {
+      const sc = report ? report.faithfulness_score : null;
+      scoreText = (sc == null) ? "N/A" : (Math.floor(sc * 100) + "%");
+    }
 
     let countsLine = "";
     if (isDone) countsLine = nSup + " of " + nClaims + " grounded" + (nLow ? " · " + nLow + " to review" : "");
@@ -356,9 +436,13 @@ class Component extends DCLogic {
     if (isDone) liveMsg = "Faithfulness " + st.scoreDisplay + " percent, " + nSup + " of " + nClaims + " claims grounded, " + nNei + " not in source.";
     else if (isChecking) liveMsg = "grounding " + st.progress + " of " + nClaims;
 
-    const frac = isDone ? 1 : (st.progress / nClaims);
-    const cost = (0.014 * frac).toFixed(3);
-    const lat = (3.8 * frac).toFixed(1);
+    // Footer = live report numbers once the report lands; before that, the old
+    // progress-scaled simulation as a transient fallback during the fetch window.
+    const frac = isDone ? 1 : (nClaims ? (st.progress / nClaims) : 0);
+    const cost = report ? report.cost_usd.toFixed(3) : (0.014 * frac).toFixed(3);
+    const lat = report ? report.latency_s.toFixed(1) : (3.8 * frac).toFixed(1);
+    const nRunsFooter = report ? report.n_runs : st.nRuns;
+    const promptVer = report ? report.prompt_version : "v3";
 
     const rootStyle = this.props.dark
       ? "--bg:#0C0D0F;--bgsub:#15171A;--ink:#F2F3F5;--ink2:#A8ACB3;--ink3:#7E828A;--line:#22242A;--line2:#2E3137"
@@ -376,11 +460,12 @@ class Component extends DCLogic {
       onStepDown: () => this.setState(s => ({ nRuns: Math.max(1, s.nRuns - 1) })),
       onStepUp: () => this.setState(s => ({ nRuns: Math.min(5, s.nRuns + 1) })),
       onCheck: this.runCheck,
-      isIdle, isChecking, isDone,
-      showResults: !isIdle,
-      progressLabel: "grounding " + st.progress + " of " + nClaims + "\u2026",
-      progressPct: (st.progress / nClaims * 100) + "%",
-      scoreText: isDone ? Math.floor(nSup / nClaims * 100) + "%" : "",
+      isIdle, isChecking, isDone, isError,
+      errorMsg: st.error ? st.error.message : "",
+      showResults: isChecking || isDone,
+      progressLabel: nClaims ? ("grounding " + st.progress + " of " + nClaims + "\u2026") : "grounding\u2026",
+      progressPct: (nClaims ? (st.progress / nClaims * 100) : 0) + "%",
+      scoreText: scoreText,
       countsLine, liveMsg,
       meterSup: pct(rSup), meterNei: pct(rNei), meterCon: pct(rCon),
       meterSupColor: V.SUPPORTED.meter, meterNeiColor: V.NOT_ENOUGH_INFO.meter, meterConColor: V.CONTRADICTED.meter,
@@ -388,7 +473,7 @@ class Component extends DCLogic {
       hasSelection: st.selectedSentence != null,
       sel: detailOf(st.selectedSentence) || { word:"", ink:"var(--ink2,#54585F)", votes:"", confLabel:"", hasSpan:false, noSpan:false, span:"", rationale:"" },
       legSup: V.SUPPORTED.fill, legNei: V.NOT_ENOUGH_INFO.fill, legCon: V.CONTRADICTED.fill,
-      footerLine: "$" + cost + " cost · " + lat + " s · N=" + st.nRuns + " · prompt v3 · opus-4-8"
+      footerLine: "$" + cost + " cost · " + lat + " s · N=" + nRunsFooter + " · prompt " + promptVer + " · opus-4-8"
     };
   }
 }

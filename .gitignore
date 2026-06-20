@@ -52,6 +52,10 @@ coverage.xml
 .pytest_cache/
 cover/
 
+# Playwright e2e artifacts (traces/screenshots, written only on failures)
+test-results/
+playwright-report/
+
 # Translations
 *.mo
 *.pot

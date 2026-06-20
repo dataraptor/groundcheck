@@ -1,0 +1,3 @@
+# Keep POSIX shell scripts LF so the bash shebang isn't broken by a CRLF checkout on
+# Windows (the repo's primary env). PowerShell scripts are tolerant of either ending.
+*.sh text eol=lf

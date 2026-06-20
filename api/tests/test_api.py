@@ -248,6 +248,23 @@ def test_oversize_warning_surfaced(client):
     assert "n_claims" in body
 
 
+def test_oversize_source_warning_surfaced(client):
+    """An over-cap SOURCE is truncated WITH a surfaced warning (Split 11 §17 chain).
+
+    The source cap (``MAX_SOURCE_TOKENS``) was defined but un-enforced before Split 11
+    (see PROGRESS bug provenance); the engine now caps it in ``check()`` and the API
+    surfaces the warning the same way it does for the answer cap.
+    """
+    oversize_source = "Long source sentence. " * 4000  # > 64000-char cap
+    assert len(oversize_source) > 64000
+    r = client.post("/check", json={"source": oversize_source, "answer": HALLUCINATED["answer"]})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["warnings"], "expected a source-truncation warning to be surfaced"
+    assert any("source" in w.lower() and "cap" in w.lower() for w in body["warnings"])
+    assert "faithfulness_score" in body
+
+
 # --------------------------------------------------------------------------- #
 # Live smoke (opt-in; needs a real key)
 # --------------------------------------------------------------------------- #

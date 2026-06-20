@@ -32,7 +32,12 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Callable, Optional
 
-from .config import DEFAULT_N_RUNS, SOURCE_CACHE_FLOOR_TOKENS, THREAD_POOL_WORKERS
+from .config import (
+    DEFAULT_N_RUNS,
+    MAX_SOURCE_TOKENS,
+    SOURCE_CACHE_FLOOR_TOKENS,
+    THREAD_POOL_WORKERS,
+)
 from .decompose import decompose
 from .ground import GroundOutcome, ground
 from .highlight import highlight_answer
@@ -65,6 +70,12 @@ def check(
     """
     provider = provider or get_provider()
     started = time.perf_counter()
+
+    # 0. Cap the SOURCE by token count, mirroring the answer cap in decompose
+    #    (spec §17: an oversized source must warn + truncate, never silently balloon
+    #    the Opus ×N×claims cost or overflow the context). The answer cap lives in
+    #    decompose(); the source enters here, so this is where its cap is enforced.
+    source = _truncate_source_if_oversized(source)
 
     # 1. Decompose (Sonnet). Empty/whitespace answers short-circuit to 0 claims here
     #    with no provider call and cost_usd == 0.0 (decompose owns that).
@@ -129,6 +140,25 @@ def check(
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
+
+
+def _truncate_source_if_oversized(source: str) -> str:
+    """Truncate over-cap sources to ``MAX_SOURCE_TOKENS`` with a warning (spec §17).
+
+    Mirrors ``decompose._truncate_if_oversized`` (the answer cap): never silently
+    truncate — the warning names the cut. Uses the cheap char heuristic, not an API
+    token count. Returns the source unchanged when it is within the cap.
+    """
+    max_chars = MAX_SOURCE_TOKENS * _CHARS_PER_TOKEN
+    if len(source) <= max_chars:
+        return source
+    logger.warning(
+        "source is ~%d tokens, over the %d-token cap; truncating to the cap before "
+        "grounding (text past the cut is dropped — shorten the source to avoid this)",
+        len(source) // _CHARS_PER_TOKEN,
+        MAX_SOURCE_TOKENS,
+    )
+    return source[:max_chars]
 
 
 def _should_warm_cache_first(source: str) -> bool:

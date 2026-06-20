@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>groundcheck — source-grounded faithfulness</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -65,12 +66,12 @@
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(248px,1fr));gap:16px;">
         <div>
           <label style="display:block;font-size:0.72rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink2,#54585F);margin-bottom:8px;">Source</label>
-          <textarea value="{{ source }}" onChange="{{ onSourceChange }}" rows="6" style="width:100%;background:var(--bgsub,#F7F7F8);border:1px solid var(--line2,#D8D9DD);border-radius:8px;padding:13px 14px;font-size:var(--fs-body,0.98rem);line-height:1.6;color:var(--ink,#0B0B0C);resize:vertical;outline:none;" style-focus="border:1px solid var(--ink,#0B0B0C);box-shadow:0 0 0 2px var(--bg,#fff),0 0 0 4px var(--ink,#0B0B0C);"></textarea>
+          <textarea value="{{ source }}" onChange="{{ onSourceChange }}" rows="6" aria-label="Source" style="width:100%;background:var(--bgsub,#F7F7F8);border:1px solid var(--line2,#D8D9DD);border-radius:8px;padding:13px 14px;font-size:var(--fs-body,0.98rem);line-height:1.6;color:var(--ink,#0B0B0C);resize:vertical;outline:none;" style-focus="border:1px solid var(--ink,#0B0B0C);box-shadow:0 0 0 2px var(--bg,#fff),0 0 0 4px var(--ink,#0B0B0C);"></textarea>
           <div style="margin-top:6px;font-size:var(--fs-meta,0.85rem);color:var(--ink3,#83878E);">~68 tokens</div>
         </div>
         <div>
           <label style="display:block;font-size:0.72rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink2,#54585F);margin-bottom:8px;">Answer (candidate)</label>
-          <textarea value="{{ answer }}" onChange="{{ onAnswerChange }}" rows="6" style="width:100%;background:var(--bgsub,#F7F7F8);border:1px solid var(--line2,#D8D9DD);border-radius:8px;padding:13px 14px;font-size:var(--fs-body,0.98rem);line-height:1.6;color:var(--ink,#0B0B0C);resize:vertical;outline:none;" style-focus="border:1px solid var(--ink,#0B0B0C);box-shadow:0 0 0 2px var(--bg,#fff),0 0 0 4px var(--ink,#0B0B0C);"></textarea>
+          <textarea value="{{ answer }}" onChange="{{ onAnswerChange }}" rows="6" aria-label="Answer (candidate)" style="width:100%;background:var(--bgsub,#F7F7F8);border:1px solid var(--line2,#D8D9DD);border-radius:8px;padding:13px 14px;font-size:var(--fs-body,0.98rem);line-height:1.6;color:var(--ink,#0B0B0C);resize:vertical;outline:none;" style-focus="border:1px solid var(--ink,#0B0B0C);box-shadow:0 0 0 2px var(--bg,#fff),0 0 0 4px var(--ink,#0B0B0C);"></textarea>
           <div style="margin-top:6px;font-size:var(--fs-meta,0.85rem);color:var(--ink3,#83878E);">~64 tokens</div>
         </div>
       </div>
@@ -516,9 +517,13 @@ class Component extends DCLogic {
     const nRunsFooter = report ? report.n_runs : st.nRuns;
     const promptVer = report ? report.prompt_version : "v3";
 
+    // --ink3 (muted meta text) darkened from #83878E to #6A6E76 so small ink3 text
+    // clears WCAG AA 4.5:1 on white (~5.1:1) and on --bgsub (~4.8:1). The original
+    // #83878E was ~3.6:1 (axe "color-contrast", serious) — an a11y bug the Split-11
+    // axe audit surfaced from the Split-10 a11y scope. Hierarchy ink>ink2>ink3 kept.
     const rootStyle = this.props.dark
       ? "--bg:#0C0D0F;--bgsub:#15171A;--ink:#F2F3F5;--ink2:#A8ACB3;--ink3:#7E828A;--line:#22242A;--line2:#2E3137"
-      : "--bg:#FFFFFF;--bgsub:#F7F7F8;--ink:#0B0B0C;--ink2:#54585F;--ink3:#83878E;--line:#EAEAEC;--line2:#D8D9DD";
+      : "--bg:#FFFFFF;--bgsub:#F7F7F8;--ink:#0B0B0C;--ink2:#54585F;--ink3:#6A6E76;--line:#EAEAEC;--line2:#D8D9DD";
 
     const headerLine = "Judges faithfulness to the provided source — not truth in the world. Each claim is grounded N times; the majority label wins. prompt v3 · sonnet-4-6 · opus-4-8. Demo, not a real service.";
     const infoBtnBg = st.headerOpen ? "var(--bgsub,#F7F7F8)" : "transparent";

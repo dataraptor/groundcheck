@@ -139,3 +139,92 @@ def test_error_state_wired(script: str) -> None:
 def test_error_block_in_markup(html: str) -> None:
     assert 'value="{{ isError }}"' in html, "an isError display block must exist"
     assert "{{ errorMsg }}" in html, "the error message must be bound in the markup"
+
+
+# --------------------------------------------------------------------------- #
+# 6. Split 10 — every live edge state is wired, and the two shipped-mockup a11y
+#    bugs (palette word, scoreDisplay) are fixed. (Behaviour is verified against
+#    the live mock API in tmp/verify_split10.mjs; these pin the wiring statically.)
+# --------------------------------------------------------------------------- #
+def test_na_branch_exists(script: str) -> None:
+    # Score is driven by faithfulness_score and short-circuits to "N/A" on null.
+    assert "faithfulness_score" in script
+    assert '"N/A"' in script, "an N/A score branch must exist"
+    assert "isNA" in script, "an explicit isNA flag must drive the N/A treatment"
+
+
+def test_no_unguarded_percentage_division(script: str) -> None:
+    # Every percentage uses an `nClaims ?` guard so an empty answer never yields NaN%.
+    assert re.search(r"nClaims\s*\?", script), "percentage math must guard nClaims > 0"
+
+
+@pytest.mark.parametrize(
+    "token", ["n_refused", "unlocated_sentences", "warnings", "missing_api_key"]
+)
+def test_edge_state_fields_referenced(script: str, token: str) -> None:
+    assert token in script, f"the script must reference '{token}' to wire its state"
+
+
+def test_palette_entries_each_define_word(script: str) -> None:
+    # Bug 1: every palette() verdict entry must define a `word:` so v.word is never
+    # `undefined` — the color-INDEPENDENT verdict (a word + a shape, UI spec §9).
+    # Six entries exist (three verdicts × light/dark); all must carry word:.
+    entries = re.findall(
+        r"\b(SUPPORTED|NOT_ENOUGH_INFO|CONTRADICTED)\s*:\s*\{([^}]*)\}", script
+    )
+    assert len(entries) == 6, f"expected 6 palette object literals, found {len(entries)}"
+    missing = [label for label, obj in entries if "word:" not in obj]
+    assert not missing, f"palette entries missing a word: key: {missing}"
+
+
+def test_score_display_assigned_from_real_score(script: str) -> None:
+    # Bug 2: scoreDisplay must be set from the real score (finalScore), not the
+    # initial 0 — so the aria-live announces "Faithfulness 62 percent", not 0.
+    assert re.search(r"scoreDisplay\s*:\s*finalScore", script), (
+        "scoreDisplay must be assigned from the real (finalScore) value"
+    )
+    assert re.search(r"finalScore\s*=", script), "finalScore must be derived from the score"
+
+
+def test_refused_treatment_is_monochrome(script: str) -> None:
+    # Refused → "◻ declined" (a glyph + a word in ink-3) + the dotted treatment;
+    # no 4th/5th color is introduced (principle 1).
+    assert "declined" in script
+    assert "◻" in script, "the hollow-square glyph (a shape, not a hue) must be present"
+    assert "c.refused" in script
+
+
+def test_live_states_have_markup_regions(html: str) -> None:
+    # The new state regions exist in the <x-dc> template (minimal added markup).
+    for binding in (
+        "{{ naClaims }}",          # N/A claims calm line
+        "{{ subText }}",           # N/A subline + refusal attribution
+        "{{ hasUnlocated }}",      # unlocated footnote
+        "{{ unlocatedNote }}",
+        "{{ hasWarnings }}",       # oversize warning
+        "{{ warningNote }}",
+        "{{ hasMeter }}",          # meter gated off on N/A
+        "{{ showRefusalStar }}",   # the "*" on the % for refusal-affected
+        "{{ c.wordColor }}",       # per-row word color (ink-3 for declined)
+    ):
+        assert binding in html, f"missing live-state binding in markup: {binding}"
+    assert "No checkable claims were extracted from this answer." in html
+
+
+def test_na_claims_calm_line_copy(html: str) -> None:
+    assert "No checkable claims were extracted from this answer." in html
+
+
+def test_focus_rings_on_result_controls(html: str) -> None:
+    # The two textareas already had style-focus; Split 10 adds an explicit 2px ink
+    # ring to the result-area controls (sentence marks + claim rows) — at least 4.
+    assert html.count("style-focus=") >= 4, "result-area controls need a visible focus ring"
+
+
+def test_template_tags_balanced(html: str) -> None:
+    # Guard the minimal markup additions: the template region's control tags balance.
+    tpl = html.split('<script type="text/x-dc"')[0]
+    for tag in ("sc-if", "sc-for", "section", "footer", "div"):
+        opens = len(re.findall(rf"<{tag}[ >]", tpl))
+        closes = len(re.findall(rf"</{tag}>", tpl))
+        assert opens == closes, f"<{tag}> tags unbalanced: {opens} open vs {closes} close"

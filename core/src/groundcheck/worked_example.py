@@ -165,6 +165,61 @@ REFUSAL_TRIGGER = "please refuse to judge this claim"
 
 
 # --------------------------------------------------------------------------- #
+# Dev-only edge-state examples (Split 10 — drive the refusal / unlocated UI states)
+# --------------------------------------------------------------------------- #
+# These exist purely so the no-key (mock) demo can EXERCISE two report edge cases the
+# §5 worked example never hits, so Split 10 can wire + verify their UI treatments and
+# Split 11 can automate the same triggers. Both reuse the hypertension SOURCE and reuse
+# the worked-example verdict keys (so they add NO new grounding verdicts — the
+# source-substring guard in test_pipeline.py keeps holding) and register only a new
+# Decomposition keyed on their answer. Neither answer is a substring of the other (or
+# of the worked / grounded answers), so the mock's substring routing never crosses
+# them (a test pins this).
+
+# (a) Refusal-affected: an answer whose third claim carries REFUSAL_TRIGGER, so its
+#     grounding declines on every run → that claim is NEI + refused=True →
+#     report.n_refused == 1. The other two claims are clean SUPPORTED (62%-demo spans).
+REFUSAL_CLAIM_TEXT = "Please refuse to judge this claim."  # contains REFUSAL_TRIGGER
+
+REFUSAL_EXAMPLE_SOURCE = WORKED_EXAMPLE_SOURCE
+REFUSAL_EXAMPLE_ANSWER = (
+    "Hypertension usually causes no symptoms. A reading of 130/80 mm Hg or higher "
+    "is considered high blood pressure. Please refuse to judge this claim."
+)
+REFUSAL_EXAMPLE_DECOMPOSITION = Decomposition(
+    claims=[
+        WORKED_EXAMPLE_CLAIMS[0],  # SUPPORTED (claim == source_sentence, locatable)
+        WORKED_EXAMPLE_CLAIMS[2],  # SUPPORTED
+        DecomposedClaim(claim=REFUSAL_CLAIM_TEXT, source_sentence=REFUSAL_CLAIM_TEXT),
+    ]
+)
+REFUSAL_EXAMPLE_KEY = REFUSAL_EXAMPLE_ANSWER
+
+# (b) Unlocated sentence: an answer whose second claim has a source_sentence that does
+#     NOT occur in the answer, so highlight_answer cannot locate it →
+#     report.unlocated_sentences == [UNLOCATED_SOURCE_SENTENCE]. The claim itself still
+#     grounds (SUPPORTED) and still appears in the list — only its highlight is dropped.
+UNLOCATED_SOURCE_SENTENCE = "This sentence is deliberately absent from the answer text."
+
+UNLOCATED_EXAMPLE_SOURCE = WORKED_EXAMPLE_SOURCE
+UNLOCATED_EXAMPLE_ANSWER = (
+    "It increases the risk of heart attack, stroke, and kidney disease. "
+    "Some patients need medication."
+)
+UNLOCATED_EXAMPLE_DECOMPOSITION = Decomposition(
+    claims=[
+        WORKED_EXAMPLE_CLAIMS[3],  # SUPPORTED, source_sentence locatable in the answer
+        # SUPPORTED grounding (reuses claim 8's key), but an unlocatable source_sentence.
+        DecomposedClaim(
+            claim=WORKED_EXAMPLE_CLAIMS[7].claim,
+            source_sentence=UNLOCATED_SOURCE_SENTENCE,
+        ),
+    ]
+)
+UNLOCATED_EXAMPLE_KEY = UNLOCATED_EXAMPLE_ANSWER
+
+
+# --------------------------------------------------------------------------- #
 # The fully-grounded counter-example (Split 05 — examples/example_grounded.json)
 # --------------------------------------------------------------------------- #
 # A second answer over the *same* hypertension source whose every claim is genuinely

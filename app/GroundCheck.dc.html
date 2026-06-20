@@ -114,19 +114,29 @@
         <div class="gc-stickytop" style="position:sticky;z-index:5;background:var(--bg,#FFFFFF);border-bottom:1px solid var(--line,#EAEAEC);padding:14px 0 13px;margin-top:8px;">
           <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;min-height:1.1em;">
             <span style="font-size:var(--fs-score,2.6rem);font-weight:600;line-height:1;letter-spacing:-0.02em;color:var(--ink,#0B0B0C);">{{ scoreText }}</span>
+            <sc-if value="{{ showRefusalStar }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="font-size:var(--fs-body,0.98rem);font-weight:400;color:var(--ink3,#83878E);margin-left:-9px;">*</span></sc-if>
             <span style="font-size:var(--fs-body,0.98rem);color:var(--ink2,#54585F);">{{ countsLine }}</span>
           </div>
-          <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;margin-top:11px;background:var(--bgsub,#F7F7F8);">
-            <div style="width:{{ meterSup }};background:{{ meterSupColor }};transition:width 240ms ease-out;"></div>
-            <div style="width:{{ meterNei }};background:{{ meterNeiColor }};transition:width 240ms ease-out;"></div>
-            <div style="width:{{ meterCon }};background:{{ meterConColor }};transition:width 240ms ease-out;"></div>
-          </div>
+          <sc-if value="{{ hasSubText }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:5px;font-size:var(--fs-meta,0.85rem);color:var(--ink3,#83878E);line-height:1.45;">{{ subText }}</div>
+          </sc-if>
+          <sc-if value="{{ hasMeter }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;margin-top:11px;background:var(--bgsub,#F7F7F8);">
+              <div style="width:{{ meterSup }};background:{{ meterSupColor }};transition:width 240ms ease-out;"></div>
+              <div style="width:{{ meterNei }};background:{{ meterNeiColor }};transition:width 240ms ease-out;"></div>
+              <div style="width:{{ meterCon }};background:{{ meterConColor }};transition:width 240ms ease-out;"></div>
+            </div>
+          </sc-if>
         </div>
 
         <section style="padding:26px 0 4px;">
           <p style="font-size:var(--fs-doc,1.12rem);line-height:1.7;color:var(--ink,#0B0B0C);margin:0;font-weight:400;">
-            <sc-for list="{{ sentences }}" as="s" hint-placeholder-count="8"><span role="button" tabindex="0" aria-label="{{ s.aria }}" style="{{ s.style }}" onClick="{{ s.onSelect }}" onKeyDown="{{ s.onKey }}">{{ s.text }}</span><span> </span></sc-for>
+            <sc-for list="{{ sentences }}" as="s" hint-placeholder-count="8"><span role="button" tabindex="0" aria-label="{{ s.aria }}" style="{{ s.style }}" style-focus="outline:2px solid var(--ink,#0B0B0C);outline-offset:2px;" onClick="{{ s.onSelect }}" onKeyDown="{{ s.onKey }}">{{ s.text }}</span><span> </span></sc-for>
           </p>
+
+          <sc-if value="{{ hasUnlocated }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:10px;font-size:var(--fs-meta,0.85rem);color:var(--ink3,#83878E);line-height:1.5;">{{ unlocatedNote }}</div>
+          </sc-if>
 
           <sc-if value="{{ hasSelection }}" hint-placeholder-val="{{ false }}">
             <div style="margin-top:16px;padding:16px 16px 18px;background:var(--bgsub,#F7F7F8);border-radius:8px;">
@@ -145,20 +155,28 @@
             </div>
           </sc-if>
 
-          <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:20px;font-size:var(--fs-meta,0.85rem);color:var(--ink3,#83878E);">
-            <span style="display:inline-flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:3px;display:inline-block;background:{{ legSup }};border:1px solid var(--line2,#D8D9DD);"></span>grounded</span>
-            <span style="display:inline-flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:3px;display:inline-block;background:{{ legNei }};border:1px solid var(--line2,#D8D9DD);"></span>not in source</span>
-            <span style="display:inline-flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:3px;display:inline-block;background:{{ legCon }};border:1px solid var(--line2,#D8D9DD);"></span>contradicted</span>
-          </div>
+          <sc-if value="{{ hasClaims }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:20px;font-size:var(--fs-meta,0.85rem);color:var(--ink3,#83878E);">
+              <span style="display:inline-flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:3px;display:inline-block;background:{{ legSup }};border:1px solid var(--line2,#D8D9DD);"></span>grounded</span>
+              <span style="display:inline-flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:3px;display:inline-block;background:{{ legNei }};border:1px solid var(--line2,#D8D9DD);"></span>not in source</span>
+              <span style="display:inline-flex;align-items:center;gap:7px;"><span style="width:11px;height:11px;border-radius:3px;display:inline-block;background:{{ legCon }};border:1px solid var(--line2,#D8D9DD);"></span>contradicted</span>
+            </div>
+          </sc-if>
         </section>
 
+        <sc-if value="{{ naClaims }}" hint-placeholder-val="{{ false }}">
+          <section style="padding:18px 0 0;">
+            <div style="font-size:var(--fs-body,0.98rem);color:var(--ink2,#54585F);line-height:1.6;">No checkable claims were extracted from this answer.</div>
+          </section>
+        </sc-if>
+        <sc-if value="{{ hasClaims }}" hint-placeholder-val="{{ true }}">
         <section style="padding:18px 0 0;">
           <div style="font-size:0.72rem;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink2,#54585F);padding-bottom:6px;">Claims</div>
           <sc-for list="{{ listClaims }}" as="c" hint-placeholder-count="8">
             <div style="{{ c.rowStyle }}">
-              <button onClick="{{ c.onToggle }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px 12px 14px 13px;background:none;border:none;text-align:left;cursor:pointer;font-family:inherit;">
+              <button onClick="{{ c.onToggle }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:14px 12px 14px 13px;background:none;border:none;text-align:left;cursor:pointer;font-family:inherit;" style-focus="outline:2px solid var(--ink,#0B0B0C);outline-offset:-2px;">
                 <span style="flex:1;min-width:0;font-size:var(--fs-body,0.98rem);font-weight:500;color:var(--ink,#0B0B0C);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.claim }}</span>
-                <span style="font-size:var(--fs-meta,0.85rem);color:var(--ink2,#54585F);white-space:nowrap;">{{ c.word }}</span>
+                <span style="font-size:var(--fs-meta,0.85rem);color:{{ c.wordColor }};white-space:nowrap;">{{ c.word }}</span>
                 <span style="font-size:0.8rem;color:var(--ink3,#83878E);width:14px;text-align:center;">{{ c.chevron }}</span>
               </button>
               <sc-if value="{{ c.expanded }}" hint-placeholder-val="{{ false }}">
@@ -179,8 +197,12 @@
             </div>
           </sc-for>
         </section>
+        </sc-if>
 
         <footer style="margin-top:28px;padding-top:16px;border-top:1px solid var(--line,#EAEAEC);font-size:var(--fs-meta,0.85rem);color:var(--ink3,#83878E);line-height:1.7;">
+          <sc-if value="{{ hasWarnings }}" hint-placeholder-val="{{ false }}">
+            <div style="color:var(--ink2,#54585F);">{{ warningNote }}</div>
+          </sc-if>
           <div>{{ footerLine }}</div>
           <div>cache n/a (source &lt; 4096 tok — expected)</div>
           <div>demo, not a real service</div>
@@ -223,17 +245,21 @@ class Component extends DCLogic {
     if (this.raf) { cancelAnimationFrame(this.raf); this.raf = null; }
   }
 
+  // The verdict palette. `word` is the color-INDEPENDENT verdict label (UI spec §9:
+  // a verdict must read as a word + a shape, never color alone) — it drives the claim
+  // list word, the expanded label, the sentence aria-label, and the grayscale check.
+  // It mirrors config.VERDICT_WORDS in the engine. Identical words on light + dark.
   palette() {
     const dark = !!this.props.dark;
     if (dark) return {
-      SUPPORTED:{ fill:"rgba(46,160,80,.18)", ink:"#5BD08A", rule:"#5BD08A", meter:"#3FB068" },
-      NOT_ENOUGH_INFO:{ fill:"rgba(176,124,0,.24)", ink:"#E0A93A", rule:"#E0A93A", meter:"#C9962E" },
-      CONTRADICTED:{ fill:"rgba(200,60,48,.24)", ink:"#F07A70", rule:"#F07A70", meter:"#D85B4E" }
+      SUPPORTED:{ word:"grounded", fill:"rgba(46,160,80,.18)", ink:"#5BD08A", rule:"#5BD08A", meter:"#3FB068" },
+      NOT_ENOUGH_INFO:{ word:"not in source", fill:"rgba(176,124,0,.24)", ink:"#E0A93A", rule:"#E0A93A", meter:"#C9962E" },
+      CONTRADICTED:{ word:"contradicted", fill:"rgba(200,60,48,.24)", ink:"#F07A70", rule:"#F07A70", meter:"#D85B4E" }
     };
     return {
-      SUPPORTED:{ fill:"#E7F3EC", ink:"#137333", rule:"#137333", meter:"#2EA050" },
-      NOT_ENOUGH_INFO:{ fill:"#FBF0DA", ink:"#8A5A00", rule:"#8A5A00", meter:"#C68A14" },
-      CONTRADICTED:{ fill:"#FBE7E7", ink:"#B42318", rule:"#B42318", meter:"#C5402F" }
+      SUPPORTED:{ word:"grounded", fill:"#E7F3EC", ink:"#137333", rule:"#137333", meter:"#2EA050" },
+      NOT_ENOUGH_INFO:{ word:"not in source", fill:"#FBF0DA", ink:"#8A5A00", rule:"#8A5A00", meter:"#C68A14" },
+      CONTRADICTED:{ word:"contradicted", fill:"#FBE7E7", ink:"#B42318", rule:"#B42318", meter:"#C5402F" }
     };
   }
 
@@ -359,17 +385,23 @@ class Component extends DCLogic {
       const done = isResolved(i);
       const selected = st.selectedSentence === i;
       const review = c.confidence < 1.0;
+      // A refused claim keeps its (amber/NEI) fill but ALSO gets the dotted underline,
+      // so refusal-driven amber is distinguishable from genuine "source silent" amber
+      // (UI spec §C2). Borderline (confidence < 1.0) gets the same dotted treatment.
+      const dotted = review || c.refused;
       let style = "display:inline;padding:3px 5px;border-radius:3px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background-color 200ms ease-out,color 200ms ease-out;";
       if (done) {
         style += "background:" + v.fill + ";color:" + v.ink + ";";
-        if (review) style += "text-decoration:underline dotted " + v.ink + ";text-underline-offset:4px;";
+        if (dotted) style += "text-decoration:underline dotted " + v.ink + ";text-underline-offset:4px;";
       } else {
         style += "background:transparent;color:var(--ink,#0B0B0C);";
       }
       if (selected) style += "box-shadow:inset 0 -2px 0 var(--ink,#0B0B0C);";
       return {
         idx: i, text: c.claim, style,
-        aria: (done ? v.word + ": " : "") + c.claim + (review && done ? ", confidence " + c.confidence.toFixed(2) + ", review" : ""),
+        aria: (done ? v.word + ": " : "") + c.claim
+          + (review && done ? ", confidence " + c.confidence.toFixed(2) + ", review" : "")
+          + (c.refused && done ? ", declined" : ""),
         onSelect: () => this.handleSelect(i),
         onKey: (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); this.handleSelect(i); } }
       };
@@ -380,8 +412,11 @@ class Component extends DCLogic {
       const c = claims[i];
       const v = V[c.label];
       const review = c.confidence < 1.0;
+      // Refused → "◻ declined" in ink-3 (no new color; a glyph + a word, UI spec §C3).
       return {
-        word: v.word, ink: v.ink, votes: c.votes,
+        word: c.refused ? "◻ declined" : v.word,
+        ink: c.refused ? "var(--ink3,#83878E)" : v.ink,
+        votes: c.votes,
         confLabel: c.confidence.toFixed(2) + (review ? " · review" : ""),
         hasSpan: !!c.span, noSpan: !c.span, span: c.span, rationale: c.rationale
       };
@@ -394,9 +429,14 @@ class Component extends DCLogic {
         const c = claims[i];
         const v = V[c.label];
         const review = c.confidence < 1.0;
-        const rule = "border-left:3px " + (review ? "dotted" : "solid") + " " + v.rule + ";";
+        // Refused and borderline both get the dotted left rule (a shape, not a hue);
+        // refused additionally shows "\u25fb declined" in ink-3 (UI spec \u00a7C3, \u00a79).
+        const dotted = review || c.refused;
+        const rule = "border-left:3px " + (dotted ? "dotted" : "solid") + " " + v.rule + ";";
         return {
-          idx: i, claim: c.claim, word: v.word,
+          idx: i, claim: c.claim,
+          word: c.refused ? "\u25fb declined" : v.word,
+          wordColor: c.refused ? "var(--ink3,#83878E)" : "var(--ink2,#54585F)",
           chevron: expandedOf(i) ? "\u2303" : "\u2304",
           expanded: expandedOf(i),
           rowStyle: "border-top:1px solid var(--line,#EAEAEC);" + rule,
@@ -418,6 +458,15 @@ class Component extends DCLogic {
     const isIdle = phase === "idle";
     const isError = phase === "error";
 
+    // ---- Final-state flags (UI spec §9 edge table). All derived from the LIVE report;
+    // every state is monochrome and in-flow (no new color, no toast/modal).
+    const isNA = isDone && nClaims === 0;          // empty/whitespace answer → N/A
+    const nRef = report ? report.n_refused : claims.filter(c => c.refused).length;
+    const refusalAffected = isDone && nRef > 0;    // header "*" + declined attribution
+    const unlocated = (report && report.unlocated_sentences) ? report.unlocated_sentences : [];
+    const nUnloc = unlocated.length;
+    const warns = (report && report.warnings) ? report.warnings : [];
+
     // Score is driven by the engine's faithfulness_score (0..1 or null), NOT
     // recomputed from claims — so an empty answer (0 claims -> null) shows "N/A",
     // never a misleading 100% or NaN (spec §19-1). Math.floor, not Math.round, so
@@ -428,13 +477,36 @@ class Component extends DCLogic {
       scoreText = (sc == null) ? "N/A" : (Math.floor(sc * 100) + "%");
     }
 
+    // A meta subline under the score: the N/A explanation, or the refusal attribution
+    // (so a refusal-driven score drop reads as honesty, not a grounding bug — §7/§17).
+    let subText = "";
+    if (isNA) subText = "No checkable claims in this answer.";
+    else if (refusalAffected) subText = nRef + (nRef === 1 ? " claim" : " claims") + " declined → counted as not-in-source.";
+    const hasSubText = isDone && subText !== "";
+
     let countsLine = "";
-    if (isDone) countsLine = nSup + " of " + nClaims + " grounded" + (nLow ? " · " + nLow + " to review" : "");
+    if (isNA) countsLine = "";  // the subline carries the N/A message; no "0 of 0"
+    else if (isDone) countsLine = nSup + " of " + nClaims + " grounded" + (nLow ? " · " + nLow + " to review" : "");
     else if (isChecking) countsLine = st.progress + " of " + nClaims + " checked";
 
     let liveMsg = "";
-    if (isDone) liveMsg = "Faithfulness " + st.scoreDisplay + " percent, " + nSup + " of " + nClaims + " claims grounded, " + nNei + " not in source.";
-    else if (isChecking) liveMsg = "grounding " + st.progress + " of " + nClaims;
+    if (isNA) liveMsg = "No checkable claims in this answer.";
+    else if (isDone) {
+      liveMsg = "Faithfulness " + st.scoreDisplay + " percent, " + nSup + " of " + nClaims + " claims grounded, " + nNei + " not in source";
+      if (nRef > 0) liveMsg += ", " + nRef + " declined";  // announce the declined count too (§9)
+      liveMsg += ".";
+    } else if (isChecking) liveMsg = "grounding " + st.progress + " of " + nClaims;
+
+    // Missing-key gets its own copy (UI spec §B); any other failure shows the body text.
+    let errorMsg = "";
+    if (st.error) {
+      errorMsg = (st.error.code === "missing_api_key")
+        ? "ANTHROPIC_API_KEY not set — this demo needs a key to run."
+        : st.error.message;
+    }
+
+    const unlocatedNote = nUnloc + (nUnloc === 1 ? " claim" : " claims") + " couldn’t be located in the text — see claims below.";
+    const warningNote = "Long input — truncated for the demo.";
 
     // Footer = live report numbers once the report lands; before that, the old
     // progress-scaled simulation as a transient fallback during the fetch window.
@@ -461,12 +533,18 @@ class Component extends DCLogic {
       onStepUp: () => this.setState(s => ({ nRuns: Math.min(5, s.nRuns + 1) })),
       onCheck: this.runCheck,
       isIdle, isChecking, isDone, isError,
-      errorMsg: st.error ? st.error.message : "",
+      errorMsg,
       showResults: isChecking || isDone,
       progressLabel: nClaims ? ("grounding " + st.progress + " of " + nClaims + "\u2026") : "grounding\u2026",
       progressPct: (nClaims ? (st.progress / nClaims * 100) : 0) + "%",
       scoreText: scoreText,
       countsLine, liveMsg,
+      // Edge-state bindings (UI spec §9): N/A subline, refusal "*"/attribution,
+      // meter-off on N/A, the N/A claims line, the unlocated footnote, oversize warning.
+      subText, hasSubText, showRefusalStar: refusalAffected,
+      hasMeter: nClaims > 0, hasClaims: nClaims > 0, naClaims: isNA,
+      hasUnlocated: isDone && nUnloc > 0, unlocatedNote,
+      hasWarnings: isDone && warns.length > 0, warningNote,
       meterSup: pct(rSup), meterNei: pct(rNei), meterCon: pct(rCon),
       meterSupColor: V.SUPPORTED.meter, meterNeiColor: V.NOT_ENOUGH_INFO.meter, meterConColor: V.CONTRADICTED.meter,
       sentences, listClaims,

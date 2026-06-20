@@ -402,6 +402,14 @@ class MockProvider:
         self.register(worked_example.GROUNDED_EXAMPLE_KEY, worked_example.GROUNDED_EXAMPLE_DECOMPOSITION)
         for claim, verdict in worked_example.GROUNDED_EXAMPLE_VERDICTS.items():
             self.register(claim, verdict)
+        # Dev-only edge-state examples (Split 10): each registers only a Decomposition
+        # keyed on its answer and reuses the verdict keys above (no new verdicts).
+        self.register(
+            worked_example.REFUSAL_EXAMPLE_KEY, worked_example.REFUSAL_EXAMPLE_DECOMPOSITION
+        )
+        self.register(
+            worked_example.UNLOCATED_EXAMPLE_KEY, worked_example.UNLOCATED_EXAMPLE_DECOMPOSITION
+        )
         self.register(worked_example.REFUSAL_TRIGGER, REFUSAL)
 
     def register(self, key: str, value: Any) -> None:

@@ -1,11 +1,29 @@
-# core
+# core: the engine
 
-The standalone engine — the core domain logic as a framework-free, installable package.
+The faithfulness verifier itself, as a framework-free, installable Python package. This is
+the bottom of the stack: it knows nothing about HTTP, the UI, or how it's deployed.
 
-This package knows nothing about HTTP, UI, or how it's deployed. It exposes a clean
-Python API (and a CLI) that everything else builds on. It can be imported into a
-script, a notebook, the API layer, or the evaluation harness without any server running.
+`import groundcheck` loads no SDK and needs no API key (providers import lazily), so the
+engine can drop into a script, a notebook, the API layer, or the eval harness without a
+server running. The public surface is one call:
 
-**Contains:** the package source (`src/`), its `pyproject.toml`, and unit tests.
+```python
+from groundcheck import check
+report = check(source, answer, n=3)
+```
 
-**Depends on:** nothing else in this repo. This is the bottom of the stack.
+It also ships a CLI (`python -m groundcheck.cli check ...`) and the `groundcheck.metrics`
+module (pure stdlib: precision, recall, F1, Cohen's κ), which the eval harness reuses so
+all the metric math lives in one place.
+
+**Contains:** the package source (`src/`), worked examples (`examples/`), its
+`pyproject.toml`, and unit tests.
+
+**Depends on:** nothing else in this repo.
+
+## Install and test
+
+```bash
+python -m pip install -e "./core[dev]"
+python -m pytest core/tests -q
+```

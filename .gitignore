@@ -222,7 +222,7 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# GroundCheck eval-harness persisted runs (Split 07) — keep the dir, ignore the runs
+# GroundCheck eval-harness persisted runs: keep the dir, ignore the runs
 eval/runs/*
 !eval/runs/.gitkeep
 

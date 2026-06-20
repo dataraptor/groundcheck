@@ -45,22 +45,45 @@ web demo runs on a deterministic `MockProvider`, so it needs no key and is byte-
 
 Four small layers. `core` is a pure, importable engine and everything else depends on it.
 
-```text
-  ┌───────────────────────────────────────────────────────────────────────┐
-  │  core/   the engine - `from groundcheck import check`                  │
-  │          decompose (Sonnet 4.6) → ground ×N (Opus 4.8) → score+highlight│
-  │          pure Python + pydantic; no key to import; provider seam        │
-  └───────────────────────────────────────────────────────────────────────┘
-        ▲                      ▲                         ▲
-        │ imports directly     │ thin HTTP adapter       │ imports directly
-        │                      │                         │
-  ┌───────────┐        ┌────────────────┐        ┌──────────────────────────┐
-  │  eval/    │        │  api/          │        │  app/                    │
-  │ two-tier  │        │ FastAPI:       │        │ single-file dc-html UI    │
-  │ meta-eval │        │ POST /check    │◄──serves│ fetch('/check') → animate │
-  │ on gold   │        │ + static app   │ same-   │ green/amber/red, scores   │
-  │ datasets  │        │ (no CORS)      │ origin  │                          │
-  └───────────┘        └────────────────┘        └──────────────────────────┘
+🟦 deterministic (code) · 🟨 LLM (distributional, N runs) · 🟥 honesty rail (degradation /
+N-A short-circuit). Full diagrams — the in-process wiring, the caching gate, the provider
+seam, and the two-tier meta-eval — are in [`docs/architecture.md`](docs/architecture.md).
+
+```mermaid
+flowchart LR
+    A([Answer]) --> DEC["DECOMPOSE<br/>Sonnet 4.6"]
+    S([Source]) --> CAP["cap + cache gate<br/>code, no LLM"]
+    DEC -- "0 claims" --> NA["score = N-A<br/>never a fake 100%"]
+    DEC -- "claims" --> GR["GROUND ×N<br/>Opus 4.8, concurrent<br/>SOURCE cached"]
+    CAP --> GR
+    GR --> REF{"run refused?"}
+    REF -- "yes" --> NEI["→ NOT_ENOUGH_INFO<br/>n_refused surfaced"]
+    REF -- "no" --> VOTE["majority + severity tie-break<br/>split vote biases to FLAG"]
+    NEI --> VOTE
+    VOTE --> SCORE["score = SUPPORTED / claims<br/>code"]
+    SCORE --> HL["highlight<br/>locate ladder, code"]
+    HL --> OUT([cited report:<br/>green/amber/red + score])
+    style CAP fill:#dbeafe,stroke:#1e40af
+    style VOTE fill:#dbeafe,stroke:#1e40af
+    style SCORE fill:#dbeafe,stroke:#1e40af
+    style HL fill:#dbeafe,stroke:#1e40af
+    style DEC fill:#fef9c3,stroke:#a16207
+    style GR fill:#fef9c3,stroke:#a16207
+    style NA fill:#fee2e2,stroke:#b91c1c
+    style NEI fill:#fee2e2,stroke:#b91c1c
+```
+
+```mermaid
+flowchart LR
+    CLI["core/ cli"] --> CORE["core/: the engine<br/>decompose · ground ×N · score · highlight"]
+    EVAL["eval/: two-tier meta-eval"] --> CORE
+    API["api/: thin FastAPI adapter"] --> CORE
+    UI["app/: dc-html UI (browser)"] -- "HTTP / fetch('/check')" --> API
+    style CORE fill:#dbeafe,stroke:#1e40af
+    style CLI fill:#dbeafe,stroke:#1e40af
+    style EVAL fill:#dbeafe,stroke:#1e40af
+    style API fill:#dbeafe,stroke:#1e40af
+    style UI fill:#ede9fe,stroke:#6d28d9
 ```
 
 - **`core`** is the orchestrator (`pipeline.check`), an in-process function. There is no
